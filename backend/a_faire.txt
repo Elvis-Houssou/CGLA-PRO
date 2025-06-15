@@ -1,0 +1,1 @@
+revoie la validation pour les champs des offres rend ça plus souple null et non requis
