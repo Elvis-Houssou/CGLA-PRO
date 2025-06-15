@@ -20,6 +20,7 @@ const axiosInstance = axios.create({
 });
 
 // Créer une instance axios spécifique pour l'envoi de fichiers
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const fileAxiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_BASE_URL,
     headers: {

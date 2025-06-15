@@ -48,6 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       } catch (error) {
         logout();
+        console.error("Erreur lors de la récupération des données utilisateur:", error);
       }
     }
 

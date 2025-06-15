@@ -1,22 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-
-import { toast } from "react-toastify";
 
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
-import Offers from "@/api/Offer";
-import { OfferProps, RoleEnum } from "@/props"; 
 import { BenefitsDialog, BenefitItem } from "@/components/offer_benefit/BenefitsCard"; 
 import CreateOffer from "@/components/offer/CreateForm";
 import DeleteOffer from "@/components/offer/DeleteForm";
 import { useOffers } from "@/context/OfferContext";
 
 import { Icon } from "@iconify/react"
-import { CreditCard, Plus, Package, CheckCircle, Edit3, Trash2 } from "lucide-react";
+import { CreditCard, Plus, Package, CheckCircle, Edit3 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

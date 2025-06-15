@@ -17,7 +17,6 @@ import {
     Info, 
     CheckCircle2, 
     ArrowRight,
-    Crown,
 } from "lucide-react"
 
 import {
@@ -44,7 +43,6 @@ import { useOffers } from "@/context/OfferContext"
 
 
 import Offers from "@/api/Offer"
-import { BenefitProps } from "@/props"
 
 // Types
 interface Benefit {

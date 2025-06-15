@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ import {
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2 } from "lucide-react";
+import { Icon } from "@iconify/react";
 import { RoleEnum, GarageProps } from "@/props";
 import User from "@/api/User";
 
@@ -175,7 +176,7 @@ export function CreateGarageForm({ onGarageCreated }: { onGarageCreated?: (newUs
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>Rôle</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value ? String(field.value) : undefined}>
                             <FormControl>
                                 <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Sélectionner un rôle" />
@@ -217,18 +218,14 @@ export function EditGarageForm({
     getGarage: GarageProps;
     onUserUpdated?: (u: GarageProps) => void;
 }) {
-    const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);
 
     const form = useForm<FormValues>({
         defaultValues: {
-        username: "",
-        firstname: "",
-        lastname: "",
-        email: "",
-        password: "",
-        role: undefined,
+        userId: 0,
+        name: "",
+        image: "",
         },
         mode: "onBlur",
     });
@@ -236,20 +233,18 @@ export function EditGarageForm({
     useEffect(() => {
         if (open && getGarage) {
             form.reset({
-                username: getGarage.name,
-                firstname: getUser.firstname ?? "",
-                lastname: getUser.lastname ?? "",
-                email: getUser.email,
-                password: "",
-                role: getUser.role as RoleEnum,
+                userId: getGarage.user_id ?? "",
+                name: getGarage.name,
+                image: getGarage.image ?? "",
+                city: getGarage.city,
             });
         }
-    }, [open, getUser, form]);
+    }, [open, getGarage, form]);
 
     const onSubmit = async (data: FormValues) => {
         setIsLoading(true);
         try {
-            const response = await User.update(getUser.id, data);
+            const response = await User.update(getGarage.id, data);
             if (response.status == 201) {
                 form.reset();
                 setOpen(false);
@@ -282,7 +277,7 @@ export function EditGarageForm({
             </DialogTrigger>
             <DialogContent className="sm:max-w-[782px] border border-primary-hover overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Modifier {getUser.username}</DialogTitle>
+                    <DialogTitle>Modifier {getGarage.name}</DialogTitle>
                     <DialogDescription>
                         Remplissez les informations nécessaires pour modifier un utilisateur.
                     </DialogDescription>
@@ -291,7 +286,7 @@ export function EditGarageForm({
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
                         control={form.control}
-                        name="username"
+                        name="name"
                         rules={{
                             required: "Username obligatoire",
                             pattern: {
@@ -311,7 +306,7 @@ export function EditGarageForm({
                     />
                     <FormField
                         control={form.control}
-                        name="firstname"
+                        name="image"
                         rules={{
                             required: "Nom obligatoire",
                             pattern: {
@@ -331,7 +326,7 @@ export function EditGarageForm({
                     />
                     <FormField
                         control={form.control}
-                        name="lastname"
+                        name="city"
                         rules={{
                             required: "Prenom obligatoire",
                             pattern: {
@@ -351,7 +346,7 @@ export function EditGarageForm({
                     />
                     <FormField
                         control={form.control}
-                        name="email"
+                        name="country"
                         rules={{
                             required: "Email obligatoire",
                             pattern: {
@@ -369,53 +364,9 @@ export function EditGarageForm({
                             </FormItem>
                         )}
                     />
-                    <FormField
-                        control={form.control}
-                        name="password"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Mot de passe</FormLabel>
-                            <FormControl>
-                                <Input type="password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                    
 
-                    {user?.role === 'super_admin' && (
-                        <FormField
-                            control={form.control}
-                            name="role"
-                            rules={{
-                                required: "Rôle obligatoire",
-                            }}
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Rôle</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Sélectionner un rôle" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent className="border border-primary-hover">
-                                    <SelectGroup>
-                                    <SelectLabel>Rôles</SelectLabel>
-                                    {Object.entries(RoleEnum).map(([key, role]) => (
-                                        <SelectItem key={key} value={key}>
-                                            {role}
-                                        </SelectItem>
-                                    ))}
-                                    </SelectGroup>
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    )}
-
+                   
                     <DialogFooter> 
                         <Button variant={"outline"} type="submit" disabled={isLoading}>
                             {isLoading ? "Enregistrement..." : "Enregistrer"}

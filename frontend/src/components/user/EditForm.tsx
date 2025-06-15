@@ -32,7 +32,6 @@ import {
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
 import { RoleEnum } from "@/props";
 import User from "@/api/User";
 import { UserProps } from "@/props/index";

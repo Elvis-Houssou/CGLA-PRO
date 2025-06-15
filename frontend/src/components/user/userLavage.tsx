@@ -1,15 +1,8 @@
 import { useState } from "react";
-import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
-  DialogClose
 } from "@/components/ui/dialog";
 import { Bubbles } from "lucide-react";
 
