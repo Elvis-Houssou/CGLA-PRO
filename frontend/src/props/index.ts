@@ -37,6 +37,29 @@ export interface UserProps {
     lastLogin?: string
 }
 
+export interface QuotaProps {
+    id: number;
+    user_id: number;
+    quota: number;
+    remuneration: number;
+    period_start: string;
+    period_end: string;
+}
+
+export interface WashRecordProps {
+    id: number;
+    user_id: number;
+    wash_id: number;
+    wash_date: string;
+}
+
+export interface ManagerProps {
+    manager: UserProps;
+    quota: QuotaProps;
+    wash_records: WashRecordProps;
+    count_wash_records: number;
+}
+
 export interface GarageProps {
     id: number;
     user_id: number;

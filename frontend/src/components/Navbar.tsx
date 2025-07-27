@@ -10,7 +10,12 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Icon } from "@iconify/react"
+import dynamic from 'next/dynamic';
+
+// Charger Icon dynamiquement sans SSR
+const Icon = dynamic(() => import('@iconify/react').then(mod => mod.Icon), {
+  ssr: false, // Désactiver le rendu côté serveur
+});
 
 export default function Navbar() {
     const name = "John Doe";

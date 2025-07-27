@@ -12,7 +12,15 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Home, Calendar, Inbox, CarFront, LogOut, CreditCard } from "lucide-react";
+import dynamic from 'next/dynamic';
+
+// Charger les icônes dynamiquement
+const Home = dynamic(() => import('lucide-react').then(mod => mod.Home), { ssr: false });
+const Calendar = dynamic(() => import('lucide-react').then(mod => mod.Calendar), { ssr: false });
+const Inbox = dynamic(() => import('lucide-react').then(mod => mod.Inbox), { ssr: false });
+const CarFront = dynamic(() => import('lucide-react').then(mod => mod.CarFront), { ssr: false });
+const LogOut = dynamic(() => import('lucide-react').then(mod => mod.LogOut), { ssr: false });
+const CreditCard = dynamic(() => import('lucide-react').then(mod => mod.CreditCard), { ssr: false });
 
 export default function SidebarMenuNav() {
   const { user, logout } = useAuth();
@@ -22,6 +30,7 @@ export default function SidebarMenuNav() {
     menuItems.push(
       { name: "Home", href: "/dashboard", icon: Home },
       { name: "Gestion des utilisateurs", href: "/dashboard/admin/users", icon: CarFront },
+      { name: "Suivi des managers", href: "/dashboard/admin/managers", icon: CarFront },
       { name: "Gestion des offres", href: "/dashboard/admin/offers", icon: CreditCard }
     );
   }
@@ -29,13 +38,12 @@ export default function SidebarMenuNav() {
   if (user && user.role === "manager") {
     menuItems.push(
       { name: "Home", href: "/dashboard", icon: Home },
-      { name: "Gestion des utilisateurs", href: "/dashboard/admin/users", icon: CarFront },
+      { name: "Utilisateurs ajoutés", href: "/dashboard/manager/users", icon: CarFront },
     );
   }
   if (user && user.role === "admin_garage") {
     menuItems.push(
       { name: "Mes lavages", href: "/dashboard/admin/garages", icon: Inbox },
-      { name: "Abonnements", href: "/dashboard/admin/subscriptions", icon: Inbox }
     );
   }
   if (user && ["employee_garage", "client_garage"].includes(user.role)) {

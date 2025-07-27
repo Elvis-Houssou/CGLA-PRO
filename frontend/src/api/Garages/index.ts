@@ -57,4 +57,5 @@ Garage.getGaragesUser = async (userId: number) =>{
 }
 
 
+
 export default Garage;

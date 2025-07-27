@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Union
+from sqlalchemy import inspect
 
-from app.routers import auth, users, offers, benefits, offer_benefits, subscriptions, garages
+from app.routers import auth, users, offers, benefits, offer_benefits, subscriptions, garages, manager_quotas
 
 app = FastAPI(title="Système de gestion de lavage auto")
 
@@ -17,6 +18,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(manager_quotas.router)
 app.include_router(offers.router)
 app.include_router(benefits.router)
 app.include_router(offer_benefits.router)

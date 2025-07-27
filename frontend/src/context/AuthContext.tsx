@@ -33,56 +33,68 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // Vérifier l'authentification au chargement
-    const token = localStorage.getItem("token");
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem("token");
 
-    if (token) {
-      try {
-        // Récupérer les informations utilisateur si elles existent
-        const userData = JSON.parse(localStorage.getItem("user") || "{}");
-        if (userData.id) {
-          setUser(userData);
-          // Synchroniser avec les cookies pour middleware
-          setCookie("auth_token", token, { maxAge: 60 * 60 * 24 * 7 }); // 7 jours
-        } else {
+      if (token) {
+        try {
+          // Récupérer les informations utilisateur si elles existent
+          const userData = JSON.parse(localStorage.getItem("user") || "{}");
+          if (userData.id) {
+            setUser(userData);
+            // Synchroniser avec les cookies pour middleware
+            setCookie("auth_token", token, { maxAge: 60 * 60 * 24 * 7 }); // 7 jours
+          } else {
+            logout();
+          }
+        } catch (error) {
           logout();
+          console.error("Erreur lors de la récupération des données utilisateur:", error);
         }
-      } catch (error) {
-        logout();
-        console.error("Erreur lors de la récupération des données utilisateur:", error);
       }
+      setIsLoading(false);
+
     }
 
-    setIsLoading(false);
   }, []);
 
   const login = (token: string, userData: User) => {
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(userData));
-    setCookie("auth_token", token, { maxAge: 60 * 60 * 24 * 7 }); // 7 jours
-    setUser(userData);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      setCookie('auth_token', token, { maxAge: 60 * 60 * 24 * 7 }); // 7 jours
+      setUser(userData);
+    }
   };
 
   const logout = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (token) {
-        await Auth.logout(token); // Attendre la réponse du serveur
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('token');
+        if (token) {
+          await Auth.logout(token); // Attendre la réponse du serveur
+        }
       }
     } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
+      console.error('Erreur lors de la déconnexion:', error);
     } finally {
       // Nettoyage côté client
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      deleteCookie("auth_token");
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        deleteCookie('auth_token');
+      }
       setUser(null);
-      router.push("/");
+      router.push('/');
     }
   };
 
   const checkAuth = () => {
-    const token = localStorage.getItem("token");
-    return !!token;
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      return !!token;
+    }
+    return false;
   };
 
   return (

@@ -2,13 +2,17 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
+import dynamic from 'next/dynamic';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/context/AuthContext";
 import SidebarMenuNav from "@/components/SidebarMenu";
 import Navbar from "@/components/Navbar";
 import AuthenticatedLayout from "./AuthenticatedLayout";
 import { OffersProvider } from "@/context/OfferContext";
-import { ToastContainer } from "react-toastify";
+// Charger ToastContainer dynamiquement sans SSR
+const ToastContainer = dynamic(() => import('react-toastify').then(mod => mod.ToastContainer), {
+  ssr: false, // Désactiver le rendu côté serveur
+});
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

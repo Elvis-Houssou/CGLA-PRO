@@ -1,7 +1,10 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.user import Role, User, UserCreate, UserUpdate
+from app.models.manager_quota import ManagerQuota
+from app.models.wash_record import WashRecord
 from app.models.garage import Garage
+from datetime import date
 from app.dependencies import DbDependency, bcrypt_context, check_manager, check_superadmin, get_current_user
 from sqlalchemy.exc import IntegrityError
 import logging
@@ -15,155 +18,155 @@ router = APIRouter(
     tags= ['user']
 )
 
-@router.post("/create_manager", status_code=status.HTTP_201_CREATED)
-async def create_manager( user_data: UserCreate,db: DbDependency, current_user: Annotated[User, Depends(check_superadmin)]):
-    """Permet au superadmin de créer un utilisateur avec le rôle manager."""
-    logger.info(f"Tentative de création de manager par superadmin : {user_data.username}, {user_data.email}")
+# @router.post("/create_manager", status_code=status.HTTP_201_CREATED)
+# async def create_manager( user_data: UserCreate,db: DbDependency, current_user: Annotated[User, Depends(check_superadmin)]):
+#     """Permet au superadmin de créer un utilisateur avec le rôle manager."""
+#     logger.info(f"Tentative de création de manager par superadmin : {user_data.username}, {user_data.email}")
 
-    if user_data.role and user_data.role != Role.manager:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Le rôle doit être 'manager'"
-        )
+#     if user_data.role and user_data.role != Role.manager:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Le rôle doit être 'manager'"
+#         )
 
-    existing_user = db.query(User).where(
-        (User.username == user_data.username) | (User.email == user_data.email)
-    ).first()
-    if existing_user:
-        if existing_user.username == user_data.username:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Nom d'utilisateur déjà pris"
-            )
-        if existing_user.email == user_data.email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email déjà utilisé"
-            )
+#     existing_user = db.query(User).where(
+#         (User.username == user_data.username) | (User.email == user_data.email)
+#     ).first()
+#     if existing_user:
+#         if existing_user.username == user_data.username:
+#             raise HTTPException(
+#                 status_code=status.HTTP_400_BAD_REQUEST,
+#                 detail="Nom d'utilisateur déjà pris"
+#             )
+#         if existing_user.email == user_data.email:
+#             raise HTTPException(
+#                 status_code=status.HTTP_400_BAD_REQUEST,
+#                 detail="Email déjà utilisé"
+#             )
 
-    new_user = User(
-        username=user_data.username,
-        email=user_data.email,
-        hashed_password=bcrypt_context.hash(user_data.password),
-        firstname=user_data.firstname if user_data.firstname else None,
-        lastname=user_data.lastname if user_data.lastname else None,
-        phone=user_data.phone,
-        age=user_data.age if user_data.age else None,
-        is_verified=False,
-        is_active=True,
-        can_add=True,  # Managers peuvent créer des admin_garage
-        can_edit=False,
-        role=Role.manager
-    )
+#     new_user = User(
+#         username=user_data.username,
+#         email=user_data.email,
+#         hashed_password=bcrypt_context.hash(user_data.password),
+#         firstname=user_data.firstname if user_data.firstname else None,
+#         lastname=user_data.lastname if user_data.lastname else None,
+#         phone=user_data.phone,
+#         age=user_data.age if user_data.age else None,
+#         is_verified=False,
+#         is_active=True,
+#         can_add=True,  # Managers peuvent créer des admin_garage
+#         can_edit=False,
+#         role=Role.manager
+#     )
 
-    try:
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        logger.info(f"Manager créé : {new_user.username}, ID={new_user.id}")
-    except IntegrityError as e:
-        logger.error(f"Erreur d'intégrité : {str(e)}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nom d'utilisateur ou email déjà pris"
-        )
-    except Exception as e:
-        logger.error(f"Erreur lors de la création du manager : {str(e)}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la création du manager"
-        )
+#     try:
+#         db.add(new_user)
+#         db.commit()
+#         db.refresh(new_user)
+#         logger.info(f"Manager créé : {new_user.username}, ID={new_user.id}")
+#     except IntegrityError as e:
+#         logger.error(f"Erreur d'intégrité : {str(e)}")
+#         db.rollback()
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Nom d'utilisateur ou email déjà pris"
+#         )
+#     except Exception as e:
+#         logger.error(f"Erreur lors de la création du manager : {str(e)}")
+#         db.rollback()
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Erreur lors de la création du manager"
+#         )
 
-    return {
-        "message": "Manager créé avec succès",
-        "data": {
-            "id": new_user.id,
-            "username": new_user.username,
-            "email": new_user.email,
-            "firstname": new_user.firstname,
-            "lastname": new_user.lastname,
-            "phone": new_user.phone,
-            "age": new_user.age,
-            "role": new_user.role
-        }
-    }
+#     return {
+#         "message": "Manager créé avec succès",
+#         "data": {
+#             "id": new_user.id,
+#             "username": new_user.username,
+#             "email": new_user.email,
+#             "firstname": new_user.firstname,
+#             "lastname": new_user.lastname,
+#             "phone": new_user.phone,
+#             "age": new_user.age,
+#             "role": new_user.role
+#         }
+#     }
 
-@router.post("/create_admin_garage", status_code=status.HTTP_201_CREATED)
-async def create_admin_garage(user_data: UserCreate, db: DbDependency, current_user: Annotated[User, Depends(check_manager)]):
-    """Permet au manager de créer un utilisateur avec le rôle admin_garage."""
-    logger.info(f"Tentative de création d'admin_garage par manager : {user_data.username}, {user_data.email}")
+# @router.post("/create_admin_garage", status_code=status.HTTP_201_CREATED)
+# async def create_admin_garage(user_data: UserCreate, db: DbDependency, current_user: Annotated[User, Depends(check_manager)]):
+#     """Permet au manager de créer un utilisateur avec le rôle admin_garage."""
+#     logger.info(f"Tentative de création d'admin_garage par manager : {user_data.username}, {user_data.email}")
 
-    if user_data.role and user_data.role != Role.admin_garage:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Le rôle doit être 'admin_garage'"
-        )
+#     if user_data.role and user_data.role != Role.admin_garage:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Le rôle doit être 'admin_garage'"
+#         )
 
-    existing_user = db.query(User).where(
-        (User.username == user_data.username) | (User.email == user_data.email)
-    ).first()
-    if existing_user:
-        if existing_user.username == user_data.username:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Nom d'utilisateur déjà pris"
-            )
-        if existing_user.email == user_data.email:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email déjà utilisé"
-            )
+#     existing_user = db.query(User).where(
+#         (User.username == user_data.username) | (User.email == user_data.email)
+#     ).first()
+#     if existing_user:
+#         if existing_user.username == user_data.username:
+#             raise HTTPException(
+#                 status_code=status.HTTP_400_BAD_REQUEST,
+#                 detail="Nom d'utilisateur déjà pris"
+#             )
+#         if existing_user.email == user_data.email:
+#             raise HTTPException(
+#                 status_code=status.HTTP_400_BAD_REQUEST,
+#                 detail="Email déjà utilisé"
+#             )
 
-    new_user = User(
-        username=user_data.username,
-        email=user_data.email,
-        hashed_password=bcrypt_context.hash(user_data.password),
-        firstname=user_data.firstname,
-        lastname=user_data.lastname,
-        phone=user_data.phone,
-        age=user_data.age,
-        is_verified=False,
-        is_active=True,
-        can_add=False,
-        can_edit=False,
-        role=Role.admin_garage
-    )
+#     new_user = User(
+#         username=user_data.username,
+#         email=user_data.email,
+#         hashed_password=bcrypt_context.hash(user_data.password),
+#         firstname=user_data.firstname,
+#         lastname=user_data.lastname,
+#         phone=user_data.phone,
+#         age=user_data.age,
+#         is_verified=False,
+#         is_active=True,
+#         can_add=False,
+#         can_edit=False,
+#         role=Role.admin_garage
+#     )
 
-    try:
-        db.add(new_user)
-        db.commit()
-        db.refresh(new_user)
-        logger.info(f"Admin_garage créé : {new_user.username}, ID={new_user.id}")
-    except IntegrityError as e:
-        logger.error(f"Erreur d'intégrité : {str(e)}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nom d'utilisateur ou email déjà pris"
-        )
-    except Exception as e:
-        logger.error(f"Erreur lors de la création de l'admin_garage : {str(e)}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la création de l'admin_garage"
-        )
+#     try:
+#         db.add(new_user)
+#         db.commit()
+#         db.refresh(new_user)
+#         logger.info(f"Admin_garage créé : {new_user.username}, ID={new_user.id}")
+#     except IntegrityError as e:
+#         logger.error(f"Erreur d'intégrité : {str(e)}")
+#         db.rollback()
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Nom d'utilisateur ou email déjà pris"
+#         )
+#     except Exception as e:
+#         logger.error(f"Erreur lors de la création de l'admin_garage : {str(e)}")
+#         db.rollback()
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Erreur lors de la création de l'admin_garage"
+#         )
 
-    return {
-        "message": "Admin_garage créé avec succès",
-        "data": {
-            "id": new_user.id,
-            "username": new_user.username,
-            "email": new_user.email,
-            "firstname": new_user.firstname,
-            "lastname": new_user.lastname,
-            "phone": new_user.phone,
-            "age": new_user.age,
-            "role": new_user.role
-        }
-    }
+#     return {
+#         "message": "Admin_garage créé avec succès",
+#         "data": {
+#             "id": new_user.id,
+#             "username": new_user.username,
+#             "email": new_user.email,
+#             "firstname": new_user.firstname,
+#             "lastname": new_user.lastname,
+#             "phone": new_user.phone,
+#             "age": new_user.age,
+#             "role": new_user.role
+#         }
+#     }
 
 @router.get("/all", status_code=status.HTTP_200_OK)
 async def get_users_with_garage(db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
@@ -283,6 +286,34 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
         db.add(new_user)
         db.commit()
         db.refresh(new_user)  # Rafraîchir pour obtenir les valeurs générées (par exemple, id)
+        if current_user.role == Role.manager:
+            wash_record = WashRecord(
+                user_id=current_user.id,
+                wash_date=date.today(),
+                wash_id=new_user.id
+            )
+            db.add(wash_record)
+
+            # Mettre à jour ou créer un quota
+            quota = db.query(ManagerQuota).filter(
+                ManagerQuota.user_id == current_user.id,
+                ManagerQuota.period_start <= date.today(),
+                ManagerQuota.period_end >= date.today()
+            ).first()
+            logger.info(f"quota recuperer : {quota}")
+
+            if quota:
+                quota.quota += 1
+            else:
+                new_quota = ManagerQuota(
+                    user_id=current_user.id,
+                    period_start=date(date.today().year, date.today().month, 1),
+                    period_end=date(date.today().year, date.today().month + 1, 1) - date.resolution,
+                    quota=1
+                )
+                db.add(new_quota)
+            db.commit()
+        
         logger.info(f"Utilisateur créé : {new_user.username}, ID={new_user.id}")
     except Exception as e:
         logger.error(f"Erreur lors de la création de l'utilisateur : {str(e)}")

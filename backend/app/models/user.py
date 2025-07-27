@@ -8,6 +8,8 @@ from pydantic import BaseModel, EmailStr, field_validator
 # Import conditionnel pour éviter les imports circulaires
 if TYPE_CHECKING:
     from .garage import Garage
+    from .manager_quota import ManagerQuota
+    from .wash_record import WashRecord
 
 
 class Role(str, Enum):
@@ -69,14 +71,5 @@ class User(UserBase, table=True):
     can_edit: bool = Field(default=False)  # Privilège d'édition
     # garages: List["Garage"] = relationship("Garage", back_populates="user")
     garages: List["Garage"] = Relationship(back_populates="user")
-
-
-# {
-#   "username": "superadmin",
-#   "email": "super@gmail.com",
-#   "password": "12345678",
-#   "firstname": "super",
-#   "lastname": "admin",
-#   "phone": "+2250554987943",
-#   "age": 25
-# }
+    quotas: List["ManagerQuota"] = Relationship(back_populates="user")  # Nouvelle relation avec ManagerQuota
+    wash_records: List["WashRecord"] = Relationship(back_populates="user")

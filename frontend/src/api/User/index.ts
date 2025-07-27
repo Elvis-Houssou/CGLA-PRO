@@ -52,6 +52,10 @@ User.getAllUsers = async () =>{
     return await axiosInstance.get(`${process.env.NEXT_PUBLIC_BASE_URL}/user/all`)
 }
 
+User.getManagerUsers = async () =>{
+    return await axiosInstance.get(`${process.env.NEXT_PUBLIC_BASE_URL}/manager/get`)
+}
+
 User.updateStatus = async (userId: number, status: boolean) =>{
     return await axiosInstance.post(`${process.env.NEXT_PUBLIC_BASE_URL}/user/status?user_id=${userId}&status=${status}`,{})
 }
@@ -76,7 +80,9 @@ User.getGarage = async (userId: number) => {
     return await axiosInstance.get(`${process.env.NEXT_PUBLIC_BASE_URL}/garage/${userId}/`);
 }
 
-
+User.getManager = async () => {
+    return await axiosInstance.get(`${process.env.NEXT_PUBLIC_BASE_URL}/manager/all`);
+}
 
 
 export default User;

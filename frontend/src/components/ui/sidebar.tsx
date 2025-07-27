@@ -49,7 +49,15 @@ const SidebarProvider = React.forwardRef<
     onOpenChange?: (open: boolean) => void
   }
 >(({ defaultOpen = true, open: openProp, onOpenChange: setOpenProp, className, style, children, ...props }, ref) => {
-  const isMobile = window.innerWidth < 768
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const [openMobile, setOpenMobile] = React.useState(false)
 
   // This is the internal state of the sidebar.

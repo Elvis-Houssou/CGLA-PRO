@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useAuth } from "@/context/AuthContext";
@@ -11,7 +11,13 @@ import CreateOffer from "@/components/offer/CreateForm";
 import DeleteOffer from "@/components/offer/DeleteForm";
 import { useOffers } from "@/context/OfferContext";
 
-import { Icon } from "@iconify/react"
+import dynamic from 'next/dynamic';
+
+// Charger Icon dynamiquement sans SSR
+const Icon = dynamic(() => import('@iconify/react').then(mod => mod.Icon), {
+  ssr: false, // Désactiver le rendu côté serveur
+});
+
 import { CreditCard, Plus, Package, CheckCircle, Edit3 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
