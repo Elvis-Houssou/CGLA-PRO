@@ -73,28 +73,29 @@ export default function LoginForm() {
     };
     
     return (
-        <Card className="bg-primary-hover border-none shadow-md">
-            <CardHeader className="text-background">
-                <CardTitle>Connexion</CardTitle>
-                <CardDescription>Connectez-vous à votre compte</CardDescription>
+        <Card className="bg-gray-100/80 border border-gray-200 shadow-md">
+            <CardHeader>
+                <CardTitle className="text-center text-xl">Connectez-vous à votre compte</CardTitle>
+                <CardDescription className="text-gray-400 text-center text-xs" >Entrez votre adresse email pour vous connecter</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent >
                 <form className="space-y-4">
-                    <div className="py-2">
-                        <Label htmlFor="email" className="py-2">Email</Label>
+                    <div className="">
+                        <Label htmlFor="email" className="py-2 text-gray-500">Email</Label>
                         <Input 
                             id="email"
                             type="email"
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             required
+                            className="border border-gray-400 text-gray-500"
                         />
                     </div>
-                    <div className="py-2 text-background">
+                    <div className="">
                         <div className="flex justify-between items-center">
-                            <Label htmlFor="password" className="py-2">Mot de passe</Label>
-                            <span className="py-2 text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
-                                Forgot Password?
+                            <Label htmlFor="password" className="py-2 text-gray-500">Mot de passe</Label>
+                            <span className="py-2 text-sm text-sky-400 hover:text-sky-700 cursor-pointer">
+                                Mot de passe oublié ?
                             </span>
                         </div>
                         <Input 
@@ -103,20 +104,21 @@ export default function LoginForm() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            className="border border-gray-400 text-gray-500"
                         />
                     </div>
                     <div className="flex items-center space-x-2">
                         <Checkbox 
                             id="remember" 
-                            className="border-background"
+                            className="border-gray-400 text-gray-500"
                             checked={rememberMe}
                             onCheckedChange={setRememberMe}
                         />
                         <Label 
                             htmlFor="remember" 
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                            className="text-sm font-medium  text-gray-500leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                         >
-                            Remember Me
+                            Se souvenir de moi
                         </Label>
                     </div>
                 </form>
@@ -126,6 +128,7 @@ export default function LoginForm() {
                     type="submit" 
                     variant={'animated'}
                     onClick={handleSubmit}
+                    className="w-full bg-sky-400 text-white hover:bg-sky-500"
                 >Se connecter</Button>
             </CardFooter>
         </Card>
