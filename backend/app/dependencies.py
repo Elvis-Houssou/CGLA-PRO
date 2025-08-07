@@ -11,6 +11,7 @@ from app.models.user import User, Role
 from app.models.subscription import Subscription, Status
 from app.models.benefit import Benefit
 from app.models.offer_benefit import OfferBenefit
+from pydantic import BaseModel
 
 import os
 
@@ -51,9 +52,9 @@ def authenticate_user(db: Session, identifier: str, password: str):
     return user
 
 
-def create_access_token(username: str, user_id: int, role: str, expires_delta: timedelta = None):
+def create_access_token(user: BaseModel, expires_delta: timedelta = None):
     """Crée un token JWT."""
-    encode = {'sub': username, 'id': user_id, 'role': role}
+    encode = {'email': user.email, 'firstname': user.firstname, 'lastname': user.lastname, 'phone': user.phone, 'username': user.username, 'id': user.id, 'role': user.role}
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -61,6 +62,11 @@ def create_access_token(username: str, user_id: int, role: str, expires_delta: t
     encode.update({"exp": expire})
     encoded_jwt = jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+def get_access_token(token: str):
+    """decoder un token JWT."""
+    decoded_jwt = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
+    return decoded_jwt
 
 
 def get_current_user(token: Annotated[str, Depends(oauth2_bearer)], db: DbDependency) -> User:
@@ -72,7 +78,8 @@ def get_current_user(token: Annotated[str, Depends(oauth2_bearer)], db: DbDepend
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        identifier: str = payload.get('sub')
+        identifier: str = payload.get('email')
+        username: str = payload.get('username')
         user_id: int = payload.get('id')
         role: str = payload.get('role')
         if None in (identifier, user_id, role):
@@ -80,7 +87,7 @@ def get_current_user(token: Annotated[str, Depends(oauth2_bearer)], db: DbDepend
     except JWTError:
         raise credentials_exception
     
-    user = db.query(User).where((User.username == identifier) | (User.email == identifier)).first()
+    user = db.query(User).where((User.username == username) | (User.email == identifier)).first()
     if user is None:
         raise credentials_exception
     return user
