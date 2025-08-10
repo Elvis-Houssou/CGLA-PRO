@@ -1,3 +1,4 @@
+from sqlalchemy.future import select
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.user import Role, User, UserCreate, UserUpdate
@@ -370,6 +371,52 @@ async def edit_user(user_id: int, user_data: UserUpdate, db: DbDependency, curre
         "message": "Utilisateur modifié avec succès",
         "user": user
     }
+
+
+@router.post("/create_user_admin", status_code=status.HTTP_201_CREATED)
+async def create_user_admin(
+    user_data: UserCreate,
+    db: DbDependency,
+):
+    """Créer un utilisateur super admin."""
+
+    # Vérification email ou username existants
+    existing_user = db.execute(
+        select(User).where(
+            (User.email == user_data.email) | (User.username == user_data.username)
+        )
+    ).scalar_one_or_none()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Un utilisateur avec cet email ou ce nom d'utilisateur existe déjà."
+        )
+
+    # Création du nouvel utilisateur
+    new_user = User(
+        username=user_data.username,
+        email=user_data.email,
+        hashed_password=bcrypt_context.hash(user_data.password),
+        firstname=user_data.firstname,
+        lastname=user_data.lastname,
+        phone=user_data.phone,
+        age=user_data.age,
+        role=Role.super_admin
+    )
+
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return new_user
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la création de l'utilisateur admin : {str(e)}"
+        )
+
 
 @router.delete("/delete/{user_id}", status_code=status.HTTP_200_OK)
 async def delete_user(user_id: int, db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
