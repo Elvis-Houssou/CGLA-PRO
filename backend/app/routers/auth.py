@@ -5,7 +5,7 @@ from jose import jwt
 from datetime import timedelta
 # from app.models.user import User
 from dotenv import load_dotenv
-from app.dependencies import DbDependency, create_access_token, authenticate_user, get_current_user
+from app.dependencies import DbDependency, create_access_token, get_access_token, authenticate_user, get_current_user
 
 
 
@@ -25,7 +25,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: 
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = create_access_token(user.username, user.id, user.role, timedelta(minutes=600))
+    token = create_access_token(user, timedelta(minutes=600))
     return {
         "access_token": token, 
         "token_type": "bearer", 
@@ -36,6 +36,22 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: 
             "email": user.email,
             "role": user.role
         }
+    }
+
+@router.post('/me', status_code=status.HTTP_200_OK)
+async def get_my_access(token: str):
+    """Récupère les informations d'un utilisateur en fonction de son token."""
+    user_data = get_access_token(token)
+    if not user_data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="token malformé ou erreur",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return {
+        "message": "information récupérer",
+        "user": user_data
     }
 
 
