@@ -21,7 +21,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     # Ajouter 'manager' à l'enum existant
-    op.execute("ALTER TYPE role ADD VALUE 'manager'")
+    # op.execute("ALTER TYPE role ADD VALUE 'manager'")
     pass
 
 

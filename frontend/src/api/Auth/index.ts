@@ -1,35 +1,56 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
-import { LoginDataProps, RegisterDataProps } from '@/props';
+import { ReponseLogin, Me, RegisterDataProps } from '@/props';
+import { UserService, Credentials } from '@/props/index';
 
-// eslint-disable-next-line prefer-const
-let Auth: any = {};
-Auth.login = async (data: LoginDataProps) =>{
-    return await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`, 
-        new URLSearchParams({
-            username: data.username,
-            password: data.password,
-        }),
-        {
-            headers: {
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-        }
-    )
+class UsersApiServiceImplementation implements UserService {
+    public async login(data: Credentials): Promise<any> {
+        return await axios.post(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`,
+            new URLSearchParams({
+                username: data.username,
+                password: data.password,
+            }),
+            {
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            }
+        );
+    }
+
+    public async register(data: RegisterDataProps): Promise<any> {
+        return await axios.post(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/api/register`,
+            data
+        );
+    }
+
+    public async logout(token: string): Promise<any> {
+        return await axios.post(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/api/logout`,
+            {},
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                withCredentials: true
+            }
+        );
+    }
+    public async fetchMe(): Promise<Me | string> {
+        return await axios.get(
+            `${process.env.NEXT_PUBLIC_BASE_URL}/api/me`,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                withCredentials: true
+            }
+        );
+    }
 }
 
-Auth.register = async (data: RegisterDataProps) =>{
-    return await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/register`, data)
-}
-
-Auth.logout = async (token: string) =>{
-    return await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/logout`, {}, {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
-        withCredentials: true
-    })
-}
-
+const Auth = new UsersApiServiceImplementation();
 export default Auth;

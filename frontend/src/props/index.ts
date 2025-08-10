@@ -1,6 +1,20 @@
-export interface LoginDataProps {
+export interface UserService {
+
+  login(credentials: Credentials): Promise<ReponseLogin | string>;
+  fetchMe(): Promise<Me | string>;
+
+}
+
+export interface Credentials {
     username: string;
     password: string;
+}
+export interface ReponseLogin {
+  access_token: string;
+  token_type: string;
+  detail?: string;
+  account_status: string;
+  account_role: string;
 }
 
 export interface RegisterDataProps {
@@ -8,6 +22,16 @@ export interface RegisterDataProps {
     email: string;
     password: string;
     role?: string;
+}
+export interface Me {
+    id: number;
+    username: string;
+    firstname: string;
+    lastname: string;
+    email: string;
+    phone: string;
+    exp: number;    
+    role: string;
 }
 
 export interface UserProps {

@@ -1,46 +1,60 @@
 import Image from "next/image";
 import { Tabs, TabsTrigger, TabsContent, TabsList } from "@/components/ui/tabs";
-// import { Button } from "@/components/ui/button"
 import LoginForm from "@/components/form/LoginForm";
-import SignupForm from "@/components/form/SignUpForm";
+// import SignupForm from "@/components/form/SignUpForm";
+import Layout from "./layout";
 
 export default function Home() {
   return (
-    <div className="bg-background flex w-full items-center justify-center w-full">
-      <div className="flex flex-col lg:flex-row w-full h-screen overflow-hidden">
-        <div className="lg:w-1/2 flex flex-col items-center justify-center gap-4 my-auto mx-auto">
-          <Image 
-            src={"/images/logo.png"}
-            alt="Logo"
-            width={250}
-            height={250}
-            className="mb-4"
-          />
+    <Layout>
+      <div className="h-screen bg-white">
+        <div className="flex flex-col lg:flex-row w-full h-full bg-white shadow-xl overflow-hidden">
+          {/* Partie gauche */}
+          <div className="lg:w-1/2 flex flex-col items-center justify-center py-12 px-6 sm:px-12 h-full">
+            <div className="w-full max-w-md mx-auto">
+              <div className="flex justify-center mb-8">
+                <Image
+                  src="/images/logo.png"
+                  alt="Logo"
+                  width={180}
+                  height={180}
+                  className="object-contain hover:scale-105 transition-transform duration-300"
+                  priority
+                />
+              </div>
 
-          <Tabs defaultValue="Login" className="w-full flex items-center justify-center my-auto mx-autow-full lg:w-3/4 flex items-center justify-center px-4 sm:px-6 lg:px-8">
-            <TabsList className="grid w-full grid-cols-2 bg-primary-hover shadow-md">
-              <TabsTrigger value="Login">Connexion</TabsTrigger>
-              <TabsTrigger value="Signup">Inscription</TabsTrigger>
-            </TabsList>
-            <TabsContent value="Login" className="w-full">
-              <LoginForm />
-            </TabsContent>
-            <TabsContent value="Signup" className="w-full">
-              <SignupForm />
-            </TabsContent>
-          </Tabs>
-        </div>
+              <Tabs defaultValue="Login" className="w-full h-full flex flex-col">
+                <div className="relative overflow-hidden flex-grow">
+                  <TabsContent value="Login" className="h-full">
+                    <div className="animate-in fade-in slide-in-from-left-8 duration-300 h-full">
+                      <LoginForm />
+                    </div>
+                  </TabsContent>
 
-        <div className="hidden md:flex w-1/2 items-center justify-center">
-          <Image
-            src="/images/login_image.jpg"
-            alt="Illustration"
-            width={500}
-            height={500}
-            className="w-full h-screen bg-cover object-cover rounded-lg shadow-lg"
-          />
+                  {/* <TabsContent value="Signup" className="h-full">
+                    <div className="animate-in fade-in slide-in-from-right-8 duration-300 h-full">
+                      <SignupForm />
+                    </div>
+                  </TabsContent> */}
+                </div>
+              </Tabs>
+            </div>
+          </div>
+
+          {/* Partie droite */}
+          <div className="hidden lg:flex lg:w-1/2 bg-gray-50 relative h-full">
+            <Image
+              src="/images/login_image.jpg"
+              alt="Illustration"
+              fill
+              className="object-cover"
+              priority
+              quality={90}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

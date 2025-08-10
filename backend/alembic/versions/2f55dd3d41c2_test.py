@@ -18,24 +18,25 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-def upgrade() -> None:
-    """Upgrade schema."""
-    # Créer la table wash_record
-    op.create_table(
-        'wash_record',
-        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
-        sa.Column('user_id', sa.Integer(), sa.ForeignKey('user.id', ondelete='CASCADE'), nullable=False),
-        sa.Column('wash_date', sa.Date(), nullable=False),
-        sa.Column('wash_id', sa.Integer(), nullable=True, unique=True),
-    )
-   # Créer un index pour améliorer les performances sur user_id
-    op.create_index(op.f('ix_wash_record_user_id'), 'wash_record', ['user_id'], unique=False)
+
+def upgrade():
+    # Vérifier si la table existe déjà
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    tables = inspector.get_table_names()
+    
+    if 'wash_record' not in tables:
+        op.create_table(
+            'wash_record',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('user_id', sa.Integer(), nullable=False),
+            sa.Column('wash_date', sa.Date(), nullable=False),
+            sa.Column('wash_id', sa.Integer()),
+            sa.PrimaryKeyConstraint('id'),
+            sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
+            sa.UniqueConstraint('wash_id')
+        )
 
 
-def downgrade() -> None:
-    """Downgrade schema."""
-    # Supprimer l'index
-    op.drop_index(op.f('ix_wash_record_user_id'), table_name='wash_record')
-    # Supprimer la table wash_record
+def downgrade():
     op.drop_table('wash_record')
-    # ### end Alembic commands ###
