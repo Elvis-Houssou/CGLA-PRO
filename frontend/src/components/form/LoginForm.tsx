@@ -83,7 +83,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   return (
     <>
-      <Toaster position="top-right"/>
+      <Toaster position="top-right" richColors/>
     
       <div className="space-y-6">
         <div className="space-y-2 text-center">

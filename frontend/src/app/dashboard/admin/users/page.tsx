@@ -5,7 +5,8 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "react-toastify";
+// import { toast } from "react-toastify";
+import { Toaster,toast } from "sonner";
 import { motion } from "framer-motion";
 import User from "@/api/User";
 import { UserProps, RoleEnum } from "@/props";
@@ -97,17 +98,17 @@ export default function UsersPage() {
   const getRoleColor = (role: string) => {
     switch (role) {
       case "super_admin":
-        return "bg-gradient-to-r from-red-600 to-red-500";
+        return "bg-gradient-to-r from-red-600 to-red-500 bg-red-600";
       case "manager":
-        return "bg-gradient-to-r from-orange-600 to-orange-500";
+        return "bg-gradient-to-r from-orange-600 to-orange-500 bg-orange-600";
       case "admin_garage":
-        return "bg-gradient-to-r from-blue-600 to-blue-500";
+        return "bg-gradient-to-r from-blue-600 to-blue-500 bg-blue-600";
       case "employee_garage":
-        return "bg-gradient-to-r from-green-600 to-green-500";
+        return "bg-gradient-to-r from-green-600 to-green-500 bg-green-600";
       case "client_garage":
-        return "bg-gradient-to-r from-gray-600 to-gray-500";
+        return "bg-gradient-to-r from-gray-600 to-gray-500 bg-gray-600";
       default:
-        return "bg-gradient-to-r from-gray-600 to-gray-500";
+        return "bg-gradient-to-r from-gray-600 to-gray-500 bg-gray-600";
     }
   };
 
@@ -334,7 +335,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="container mx-auto  ">
+    <div className="container mx-auto">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card className="shadow-lg bg-white border-none transition-all hover:shadow-xl">
@@ -529,28 +530,17 @@ export default function UsersPage() {
                           <TableCell>
                             <Popover>
                               <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className={`${getRoleColor(
-                                    userData.role || ""
-                                  )} text-white hover:opacity-90`}
-                                >
-                                  {getRoleLabel(userData.role || "")}
-                                </Button>
+                                <div className="flex items-center">
+                                  <div className={`h-3 w-3 rounded-full mr-2 ${getRoleColor(userData.role || '').replace('bg-gradient-to-r', 'bg')}`} />
+                                  <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getRoleColor(userData.role || '').replace('bg-gradient-to-r', 'bg')} text-white`}>
+                                    {getRoleLabel(userData.role || '')}
+                                  </div>
+                                </div>
                               </PopoverTrigger>
                               <PopoverContent align="start" className="w-48 p-2">
                                 <div className="space-y-1">
-                                  <h4 className="font-medium px-2 py-1">
-                                    Changer le rôle
-                                  </h4>
-                                  {[
-                                    "super_admin",
-                                    "manager",
-                                    "admin_garage",
-                                    "employee_garage",
-                                    "client_garage",
-                                  ].map((role) => (
+                                  <h4 className="font-medium px-2 py-1">Changer le rôle</h4>
+                                  {["super_admin", "manager", "admin_garage", "employee_garage", "client_garage"].map((role) => (
                                     <Button
                                       key={role}
                                       variant="ghost"
@@ -564,7 +554,10 @@ export default function UsersPage() {
                                         handleChangeRole(userData.id, role)
                                       }
                                     >
-                                      {getRoleLabel(role)}
+                                      <div className="flex items-center">
+                                        <div className={`h-2 w-2 rounded-full mr-2 ${getRoleColor(role).replace('bg-gradient-to-r', 'bg')}`} />
+                                        {getRoleLabel(role)}
+                                      </div>
                                     </Button>
                                   ))}
                                 </div>
@@ -575,17 +568,22 @@ export default function UsersPage() {
                           <TableCell>
                             <Popover>
                               <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className={`${
-                                    userData.is_active
-                                      ? "bg-green-500 hover:bg-green-600"
-                                      : "bg-red-500 hover:bg-red-600"
-                                  } text-white`}
-                                >
-                                  {userData.is_active ? "Actif" : "Inactif"}
-                                </Button>
+                                <div className="flex items-center">
+                                  <div className={`h-3 w-3 rounded-full mr-2 ${userData.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
+                                  <div className={`relative inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${userData.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                    {userData.is_active ? (
+                                      <span className="flex items-center">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5" />
+                                        Actif
+                                      </span>
+                                    ) : (
+                                      <span className="flex items-center">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-red-500 mr-1.5" />
+                                        Inactif
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               </PopoverTrigger>
                               <PopoverContent align="start" className="w-32 p-2">
                                 <div className="space-y-1">
