@@ -37,7 +37,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           />
           <SidebarProvider className="w-full p-4">
             <SidebarMenuNav />
-            <main className="w-full bg-blue-200 flex flex-col h-screen">
+            <main className="w-full  flex flex-col h-screen">
               <Navbar />
               <AuthenticatedLayout>{children}</AuthenticatedLayout>
             </main>

@@ -4,7 +4,7 @@ import { ReponseLogin, Me, RegisterDataProps } from '@/props';
 import { UserService, Credentials } from '@/props/index';
 
 class UsersApiServiceImplementation implements UserService {
-    public async login(data: Credentials): Promise<any> {
+   async login(data: Credentials): Promise<any> {
         return await axios.post(
             `${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`,
             new URLSearchParams({
@@ -40,11 +40,13 @@ class UsersApiServiceImplementation implements UserService {
         );
     }
     public async fetchMe(): Promise<Me | string> {
+        const token = localStorage.getItem('token');
         return await axios.get(
-            `${process.env.NEXT_PUBLIC_BASE_URL}/api/me`,
+            `${process.env.NEXT_PUBLIC_BASE_URL}/auth/me`,
             {
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 withCredentials: true
             }

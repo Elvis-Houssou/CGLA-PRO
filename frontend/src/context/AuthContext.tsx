@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { setCookie, deleteCookie } from "cookies-next";
 import Auth from "@/api/Auth";
+import { useAppDispatch, useAppSelector } from "@/hooks/redux-hook";
 
 type User = {
   id: number;
@@ -11,7 +12,12 @@ type User = {
   firstname?: string;
   lastname?: string;
   email: string;
-  role: "super_admin" | "manager" | "admin_garage" | "employee_garage" | "client_garage";
+  role:
+    | "super_admin"
+    | "manager"
+    | "admin_garage"
+    | "employee_garage"
+    | "client_garage";
 };
 
 interface AuthContextType {
@@ -19,80 +25,83 @@ interface AuthContextType {
   isLoading: boolean;
   setUser: (user: User | null) => void;
   isAuthenticated: boolean;
-  login: (token: string, userData: User) => void;
-  logout: () => void;
+  Authlogin: (token: string, userData: User) => void;
+  logout: () => Promise<void>;
   checkAuth: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const dispatch = useAppDispatch();
+  // const me = useAppSelector((state) => state.user.me);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-
-  useEffect(() => {
-    // Vérifier l'authentification au chargement
-    if (typeof window !== 'undefined') {
+  const checkAuthentication = async () => {
+    if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
-
       if (token) {
         try {
-          // Récupérer les informations utilisateur si elles existent
-          const userData = JSON.parse(localStorage.getItem("user") || "{}");
-          if (userData.id) {
+          const userData = JSON.parse(localStorage.getItem("user") || "null");
+          if (userData?.id) {
             setUser(userData);
-            // Synchroniser avec les cookies pour middleware
             setCookie("auth_token", token, { maxAge: 60 * 60 * 24 * 7 }); // 7 jours
           } else {
-            logout();
+            await logout();
           }
         } catch (error) {
-          logout();
-          console.error("Erreur lors de la récupération des données utilisateur:", error);
+          console.error(
+            "Erreur lors de la récupération des données utilisateur:",
+            error
+          );
+          await logout();
         }
       }
       setIsLoading(false);
-
     }
+  };
 
+  useEffect(() => {
+    checkAuthentication();
   }, []);
 
-  const login = (token: string, userData: User) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setCookie('auth_token', token, { maxAge: 60 * 60 * 24 * 7 }); // 7 jours
+  const Authlogin = (token: string, userData: User) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(userData));
+      setCookie("auth_token", token, { maxAge: 60 * 60 * 24 * 7 }); // 7 jours
       setUser(userData);
     }
   };
 
   const logout = async () => {
+    console.log("logout");
+
     try {
-      if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('token');
+      if (typeof window !== "undefined") {
+        const token = localStorage.getItem("token");
         if (token) {
-          await Auth.logout(token); // Attendre la réponse du serveur
+          await Auth.logout(token);
         }
       }
     } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
+      console.error("Erreur lors de la déconnexion:", error);
     } finally {
-      // Nettoyage côté client
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        deleteCookie('auth_token');
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        deleteCookie("auth_token");
       }
       setUser(null);
-      router.push('/');
+      // router.push('/');
     }
   };
 
   const checkAuth = () => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      return !!token;
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      return !!token && !!user;
     }
     return false;
   };
@@ -104,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser,
         isLoading,
         isAuthenticated: !!user,
-        login,
+        Authlogin,
         logout,
         checkAuth,
       }}
@@ -117,7 +126,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth doit être utilisé à l'intérieur d'un AuthProvider");
+    throw new Error(
+      "useAuth doit être utilisé à l'intérieur d'un AuthProvider"
+    );
   }
   return context;
 };

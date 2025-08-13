@@ -30,6 +30,7 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: 
         "access_token": token, 
         "token_type": "bearer", 
         "message": "Connexion réussie", 
+        # "role": user.role
         'user': {
             "id": user.id,
             "username": user.username,
