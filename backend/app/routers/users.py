@@ -5,6 +5,7 @@ from app.models.user import Role, User, UserCreate, UserUpdate
 from app.models.manager_quota import ManagerQuota
 from app.models.wash_record import WashRecord
 from app.models.garage import Garage
+from app.models.subscription import Subscription
 from datetime import date
 from app.dependencies import DbDependency, bcrypt_context, check_manager, check_superadmin, get_current_user
 from sqlalchemy.exc import IntegrityError
@@ -231,6 +232,26 @@ async def update_user_role(user_id: int, role: Role, db: DbDependency, current_u
         "message": "Rôle de l'utilisateur mis à jour avec succès",
         "user": user
     }
+
+@router.get("/show/{user_id}", status_code=status.HTTP_200_OK)
+async def show_user_detail(user_id: int, db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
+    """Voir les détails d'un utilisateur"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="L'identifiant n'existe pas dans la base de données"
+        )
+    garage = db.query(Garage).filter(Garage.user_id == user.id).all()
+    subscription = db.query(Subscription).filter(Subscription.id == user.id).first()
+
+    return {
+        "message": "Informations de l'utilisateur récupérées avec succès",
+        "user": user,
+        "garage": garage,
+        "subscription": subscription
+    }
+   
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def create_user(user_data: UserCreate, db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):

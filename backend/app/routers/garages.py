@@ -14,11 +14,6 @@ router = APIRouter(
 async def get_all_garages(db: DbDependency, current_user: Annotated[User, Depends(check_superadmin)]):
     """Voir tous les garages"""
     garages = db.query(Garage).all()
-    if not garages:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Aucun garage trouvé"
-        )
     return {
         "message": "Garages récupérés avec succès",
         "data": garages
