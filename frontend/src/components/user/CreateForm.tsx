@@ -43,7 +43,7 @@ interface FormValues {
   role?: RoleEnum;
 }
 
-export default function CreateForm({ onUserCreated }: { onUserCreated?: (newUser: any) => void }) {
+export default function CreateForm({ onUserCreated,children }: { onUserCreated?: (newUser: any) => void, children?: React.ReactNode }) {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);

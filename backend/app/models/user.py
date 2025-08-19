@@ -1,5 +1,6 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional, TYPE_CHECKING
+from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, EmailStr, field_validator
 
@@ -46,7 +47,16 @@ class UserCreate(BaseModel):
         if len(v) < 8:
             raise ValueError("Le mot de passe doit contenir au moins 8 caractères")
         return v
-
+class UserMe(BaseModel):
+    id: str
+    first_name: str
+    last_name: str
+    phone: Optional[str]
+    role: Role
+    created_at: datetime
+    updated_at: datetime
+    
+    
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None

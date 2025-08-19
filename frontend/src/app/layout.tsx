@@ -5,6 +5,7 @@ import "./globals.css";
 // import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import ClientLayout from "./ClientLayout";
+import { Providers } from "./Providers";
 
 
 
@@ -23,6 +24,8 @@ export const metadata: Metadata = {
   description: "Centre des gestion des lavages Auto professionnels",
 };
 
+
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -30,11 +33,11 @@ export default function RootLayout({
 }>) {
 
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-blue-200`}
-      >
-        <ClientLayout>{children}</ClientLayout>
+   <html lang="fr">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-blue-200`}>
+        <Providers>
+          <ClientLayout>{children}</ClientLayout>
+        </Providers>
       </body>
     </html>
   );

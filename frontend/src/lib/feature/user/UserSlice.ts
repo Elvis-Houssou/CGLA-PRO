@@ -1,9 +1,6 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { Me } from "@/props/index";
 
-
-
-
 export interface UserInitialState {
   me: Me | any;
   status: string;
@@ -13,7 +10,7 @@ export interface UserInitialState {
   token: string | null;
   payload: any;
   token_type: string | null;
-  account_status: string | null;
+  // account_status: string | null;
   role: string;
   me_temporaire?: Me | any;
 }
@@ -27,18 +24,21 @@ const initialState: UserInitialState = {
   token: null,
   payload: {},
   token_type: null,
-  account_status: "",
+  // account_status: "",
   role: "",
   me_temporaire: {},
 };
 export const login = createAsyncThunk(
-
-    
-    
-)
-export const fetchMe = createAsyncThunk(
-    
-)
+  "auth/login",
+  async (credentials: any) => {
+    const response = await credentials.loginFunc(credentials.data);
+    return response;
+  }
+);
+export const fetchMe = createAsyncThunk("auth/fetchMe", async (data: any) => {
+  const response = await data.fetchMeFunc();
+  return response;
+});
 // Slice utilisateur
 export const userSlice = createSlice({
   name: "auth",
@@ -50,7 +50,7 @@ export const userSlice = createSlice({
       localStorage.removeItem("token_type");
 
       // Réinitialiser l'état
-    //   state.me = {};
+      state.me = {};
       state.status = "idle";
       state.error = null;
       state.token = null;
@@ -65,10 +65,29 @@ export const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-
-
-
-
+      .addCase(login.fulfilled, (state, action) => {
+        state.status = "success";
+        // console.log(action.payload.data.access_token);
+        const payload = action.payload.data;
+        state.token = payload.access_token;
+        state.token_type = payload.token_type;
+        // state.account_status =payload.account_status;
+        state.role = payload.role;
+      })
+      .addCase(login.rejected, (state, action) => {
+        state.status = "error";
+        state.error = action.error.message;
+        state.titleMessage = "Erreur de connexion";
+        state.bodyMessage = "Nom d'utilisateur ou mot de passe incorrect";
+      })
+      .addCase(fetchMe.fulfilled, (state, action) => {
+        state.me = action.payload;
+        state.me_temporaire = action.payload;
+      })
+      ?.addCase(fetchMe.rejected, (state, action) => {
+        state.status = "error";
+        state.error = action.error.message;
+      });
   },
 });
 
