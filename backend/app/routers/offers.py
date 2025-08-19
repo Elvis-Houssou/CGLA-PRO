@@ -1,6 +1,7 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from app.models.offer import Offer, OfferCreate, OfferUpdate
 from app.models.offer_benefit import OfferBenefit
+from app.models.benefit import Benefit
 from app.models.user import User
 from app.dependencies import DbDependency, check_superadmin
 from typing import Annotated
@@ -15,11 +16,6 @@ async def get_all_offer(db: DbDependency, current_user: Annotated[User, Depends(
     """Recupérer toutes les offres."""
     try:
         offers = db.query(Offer).all()
-        if not offers:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No offers found"
-            )
         return {
             "message": "Offers retrieved successfully",
             "offers": offers
@@ -34,15 +30,37 @@ async def get_all_offer(db: DbDependency, current_user: Annotated[User, Depends(
 async def get_one_offer(db: DbDependency, offer_id: int, current_user: Annotated[User, Depends(check_superadmin)]):
     """Recupérer une seule offre."""
     try:
-        offer = db.query(Offer).filter(Offer.id == offer_id).first()
-        if not offer:
+        offre = db.query(Offer).filter(Offer.id == offer_id).first()
+        if not offre:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail='Offer not found'
+                detail='Offre non trouvée'
             )
+        
+        # Récupérer les bénéfices liés à cette offre
+        avantages = db.query(Benefit.id, Benefit.name, Benefit.description, Benefit.icon).join(
+            OfferBenefit, OfferBenefit.benefit_id == Benefit.id
+        ).filter(
+            OfferBenefit.offer_id == offer_id
+        ).all()
+
+        # Préparer la structure de réponse
+        offre_dict = offre.__dict__.copy()
+        offre_dict.pop('_sa_instance_state', None)
+        # Les tuples retournés par .all() n'ont pas de __dict__, il faut les transformer manuellement
+        avantages_list = []
+        for benef in avantages:
+            avantages_list.append({
+                "id": benef.id,
+                "name": benef.name,
+                "description": benef.description,
+                "icon": benef.icon
+            })
+        offre_dict["benefits"] = avantages_list
+        data = offre_dict
         return {
-            "message": "Offer retrieved successfully",
-            "data": offer
+            "message": "Offre récupérée avec succès",
+            "data": data
         }
     except HTTPException:
         raise

@@ -6,6 +6,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from dotenv import load_dotenv
 from app.database import SessionLocal
 from app.models.user import User, Role
@@ -142,10 +143,10 @@ def check_manager(db: DbDependency, current_user: Annotated[User, Depends(get_cu
         )
     return current_user
 
-def check_advantage(db: DbDependency, user: User = Depends(get_current_user), required_advantage: str = None):
+def check_advantage(db: DbDependency, current_user: Dict[str, Any] = Depends(get_current_user), required_benefit: str = None):
     """Vérifie si l'utilisateur a un abonnement actif avec l'avantage requis."""
     # Vérifier si l'utilisateur est un admin_garage
-    if user.role != Role.admin_garage:
+    if current_user['role'] != Role.admin_garage:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Seuls les admin_garage peuvent accéder à cette fonctionnalité"
@@ -153,8 +154,9 @@ def check_advantage(db: DbDependency, user: User = Depends(get_current_user), re
     
     # Récupérer l'abonnement actif
     subscription = db.query(Subscription).filter(
-        Subscription.user_id == user.id,
-        Subscription.status == Status.ACTIVE
+        Subscription.user_id == current_user['id'],
+        Subscription.status == Status.ACTIVE,
+        or_(Subscription.end_date.is_(None), Subscription.end_date >= datetime.now(timezone.utc))
     ).first()
     
     if not subscription:
@@ -163,23 +165,27 @@ def check_advantage(db: DbDependency, user: User = Depends(get_current_user), re
             detail="Aucun abonnement actif trouvé"
         )
     
-    # Récupérer les avantages associés à l'offre
-    advantages = db.query(Benefit.name).join(
+    # Vérifier si le benefit requis est lié à l'offre (join sur offer_benefit et benefit)
+    has_benefit = db.query(Benefit).join(
         OfferBenefit, OfferBenefit.benefit_id == Benefit.id
     ).filter(
-        OfferBenefit.offer_id == subscription.offer_id
-    ).all()
+        OfferBenefit.offer_id == subscription.offer_id,
+        Benefit.permission_name == required_benefit  # Assure-toi que 'name' est unique pour les benefits
+    ).first()
     
-    advantage_names = [adv.name for adv in advantages]
-    
-    # Vérifier si l'avantage requis est présent
-    if required_advantage not in advantage_names:
+    if not has_benefit:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"L'abonnement ne permet pas l'accès à la fonctionnalité : {required_advantage}"
+            detail=f"L'abonnement ne permet pas l'accès à la fonctionnalité : {required_benefit}"
         )
     
-    return user
+    return current_user
+
+def get_benefit_checker(required_benefit: str):
+    """Factory pour créer un checker spécifique à un benefit."""
+    def checker(db: DbDependency, current_user: Dict[str, Any] = Depends(get_current_user)):
+        return check_advantage(db, current_user, required_benefit)
+    return checker
 
 def get_advantage_checker(required_advantage: str):
     def checker(db: DbDependency, current_user: User = Depends(get_current_user)):

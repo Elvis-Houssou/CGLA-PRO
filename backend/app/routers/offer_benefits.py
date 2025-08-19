@@ -78,7 +78,10 @@ async def assign_benefits_to_offer(db: DbDependency, offer_id: int, assignment_d
             OfferBenefit.benefit_id == benefit_id
         ).first()
         if existing:
-            continue  # Ignorer si déjà associé
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="L'avantage a déjà été assigné à cette offre"
+            )
 
         # Créer l'association dans offer_benefit
         offer_benefit = OfferBenefit(

@@ -174,3 +174,13 @@ async def get_all_employee_from_garage(db: DbDependency, garage_id: int, current
             detail=f"Error retrieving employees: {str(e)}"
         )
     
+"""pour quant tu seras pret a mettre les abonnements"""
+# @router.post("/")
+# def create_garage(garage: GarageCreate, db: DbDependency, user: Dict[str, Any] = Depends(get_benefit_checker("creation_garage"))):
+#     # Ici, l'accès est déjà validé : l'user a le benefit "creation_garage"
+#     # Crée le garage...
+#     new_garage = Garage(**garage.dict(), user_id=user['id'])
+#     db.add(new_garage)
+#     db.commit()
+#     db.refresh(new_garage)
+    # return new_garage

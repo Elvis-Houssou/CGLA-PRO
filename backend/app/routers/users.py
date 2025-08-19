@@ -170,7 +170,7 @@ router = APIRouter(
 #     }
 
 @router.get("/all", status_code=status.HTTP_200_OK)
-async def get_users_with_garage(db: DbDependency, current_user: Dict[str, Any] = Depends(get_current_user)):
+async def get_all_users(db: DbDependency, current_user: Dict[str, Any] = Depends(get_current_user)):
     """Récupère tous les utilisateurs."""
     logger.info("Récupération de tous les utilisateurs")
     if current_user['role'] == Role.super_admin:
@@ -183,12 +183,12 @@ async def get_users_with_garage(db: DbDependency, current_user: Dict[str, Any] =
     elif current_user['role'] == Role.admin_garage:
         users = db.query(User).filter(
             User.id != current_user['id'], 
-            User.role.in_([Role.employee_garage])
+            User.role.in_([Role.employee_garage, Role.client_garage])
         ).all()
-    if not users:
+    else:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Aucun utilisateur trouvé"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Vous n'êtes pas autorisé a effectué cette action"
         )
     
     return {
@@ -197,16 +197,16 @@ async def get_users_with_garage(db: DbDependency, current_user: Dict[str, Any] =
     }
 
 @router.post('/status', status_code=status.HTTP_200_OK)
-async def update_user_status(user_id: int, status: bool, db: DbDependency, current_user: Dict[str, Any] = Depends(check_superadmin)):
+async def update_user_status(user_id: int, is_active: bool, db: DbDependency, current_user: Dict[str, Any] = Depends(check_superadmin)):
     """Met à jour le statut d'un utilisateur (actif/inactif)."""
-    logger.info(f"Mise à jour du statut de l'utilisateur ID={user_id} à {'actif' if status else 'inactif'}")
+    logger.info(f"Mise à jour du statut de l'utilisateur ID={user_id} à {'actif' if is_active else 'inactif'}")
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Utilisateur non trouvé"
         )
-    user.is_active = status
+    user.is_active = is_active
     db.commit()
     db.refresh(user)
     return {
@@ -379,7 +379,6 @@ async def create_user_admin(
     db: DbDependency,
 ):
     """Créer un utilisateur super admin."""
-
     # Vérification email ou username existants
     existing_user = db.execute(
         select(User).where(

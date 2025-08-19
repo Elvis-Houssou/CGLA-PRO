@@ -14,11 +14,6 @@ async def get_all_benefits(db: DbDependency, current_user: Annotated[User, Depen
     """Recupérer tous les avantages."""
     try:
         benefits = db.query(Benefit).all()
-        if not benefits:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No benefits found"
-            )
         return {
             "message": "Benefits retrieved successfully",
             "benefits": benefits
@@ -56,8 +51,9 @@ async def create_benefit(db: DbDependency, benefit_data: BenefitCreate, current_
     """Créer un avantage."""
     new_benefit = Benefit(
         name = benefit_data.name if benefit_data.name else None,
+        permission_name = benefit_data.permission_name if benefit_data.permission_name else None,
         description = benefit_data.description if benefit_data.description else None,
-        image = benefit_data.image if benefit_data.image else None
+        icon = benefit_data.icon if benefit_data.icon else None
     )
 
     try:
@@ -87,8 +83,9 @@ async def update_benefit(db: DbDependency, benefit_data: BenefitUpdate, benefit_
         )
     
     benefit.name = benefit_data.name if benefit_data.name else benefit.name,
+    benefit.permission_name = benefit_data.permission_name if benefit_data.permission_name else benefit.permission_name,
     benefit.description = benefit_data.description if benefit_data.description else benefit.description,
-    benefit.image = benefit_data.image if benefit_data.image else benefit.image
+    benefit.icon = benefit_data.icon if benefit_data.icon else benefit.icon
     try:
         db.commit()
         db.refresh(benefit)
