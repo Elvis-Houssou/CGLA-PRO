@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
-from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from typing import Annotated, Dict, Any
 from jose import jwt
 from datetime import timedelta
 # from app.models.user import User
@@ -9,6 +9,8 @@ from app.dependencies import DbDependency, create_access_token, get_access_token
 
 
 
+
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 load_dotenv(encoding="utf-8")
 
 router = APIRouter(
@@ -38,21 +40,26 @@ async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: 
         }
     }
 
-@router.post('/me', status_code=status.HTTP_200_OK)
-async def get_my_access(token: str):
-    """Récupère les informations d'un utilisateur en fonction de son token."""
-    user_data = get_access_token(token)
-    if not user_data:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="token malformé ou erreur",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
+@router.get('/me', status_code=status.HTTP_200_OK)
+async def get_my_access(current_user: Dict[str, Any] = Depends(get_current_user)):
+    """Récupère les informations d'un utilisateur en fonction de son token JWT Bearer."""
     return {
-        "message": "information récupérer",
-        "user": user_data
+        "message": "Information récupérée",
+        "user": current_user
     }
+# async def get_my_access(token: str = Depends(oauth2_scheme)):
+#     """Récupère les informations d'un utilisateur en fonction de son token JWT Bearer."""
+#     user_data = get_access_token(token)
+#     if not user_data:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="token malformé ou erreur",
+#             headers={"WWW-Authenticate": "Bearer"},
+#         )
+#     return {
+#         "message": "information récupérer",
+#         "user": user_data
+#     }
 
 
 # @router.post("/logout", status_code=status.HTTP_200_OK)

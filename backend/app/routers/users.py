@@ -1,5 +1,5 @@
 from sqlalchemy.future import select
-from typing import Annotated
+from typing import Annotated, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.user import Role, User, UserCreate, UserUpdate
 from app.models.manager_quota import ManagerQuota
@@ -170,19 +170,19 @@ router = APIRouter(
 #     }
 
 @router.get("/all", status_code=status.HTTP_200_OK)
-async def get_users_with_garage(db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
+async def get_users_with_garage(db: DbDependency, current_user: Dict[str, Any] = Depends(get_current_user)):
     """Récupère tous les utilisateurs."""
     logger.info("Récupération de tous les utilisateurs")
-    if current_user.role == Role.super_admin:
-        users = db.query(User).filter(User.id != current_user.id).all()
-    elif current_user.role == Role.manager:
+    if current_user['role'] == Role.super_admin:
+        users = db.query(User).filter(User.id != current_user['id']).all()
+    elif current_user['role'] == Role.manager:
         users = db.query(User).filter(
-            User.id != current_user.id, 
+            User.id != current_user['id'], 
             User.role.in_([Role.admin_garage])
         ).all()
-    elif current_user.role == Role.admin_garage:
+    elif current_user['role'] == Role.admin_garage:
         users = db.query(User).filter(
-            User.id != current_user.id, 
+            User.id != current_user['id'], 
             User.role.in_([Role.employee_garage])
         ).all()
     if not users:
@@ -197,7 +197,7 @@ async def get_users_with_garage(db: DbDependency, current_user: Annotated[User, 
     }
 
 @router.post('/status', status_code=status.HTTP_200_OK)
-async def update_user_status(user_id: int, status: bool, db: DbDependency, current_user: Annotated[User, Depends(check_superadmin)]):
+async def update_user_status(user_id: int, status: bool, db: DbDependency, current_user: Dict[str, Any] = Depends(check_superadmin)):
     """Met à jour le statut d'un utilisateur (actif/inactif)."""
     logger.info(f"Mise à jour du statut de l'utilisateur ID={user_id} à {'actif' if status else 'inactif'}")
     user = db.query(User).filter(User.id == user_id).first()
@@ -237,8 +237,8 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
     logger.info(f"Tentative de création d'utilisateur : {user_data.username}, {user_data.email}")
 
     # Vérifie si l'utilisateur actuel a les droits nécessaires
-    if current_user.role not in [Role.super_admin, Role.manager, Role.admin_garage]:
-        logger.warning(f"Utilisateur {current_user.username} n'a pas les droits pour créer un utilisateur.")
+    if current_user['role'] not in [Role.super_admin, Role.manager, Role.admin_garage]:
+        logger.warning(f"Utilisateur {current_user['username']} n'a pas les droits pour créer un utilisateur.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Vous n'avez pas les droits pour créer un utilisateur."
@@ -257,11 +257,11 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
             )
     # Vérifie si le champ `role` est envoyé
     if user_data.role:
-        if current_user.role == Role.super_admin:
+        if current_user['role'] == Role.super_admin:
             role_to_assign = user_data.role
-        elif current_user.role == Role.manager:
+        elif current_user['role'] == Role.manager:
             role_to_assign = Role.admin_garage  # Les managers ne peuvent créer que des admin_garage
-        elif current_user.role == Role.admin_garage:
+        elif current_user['role'] == Role.admin_garage:
             role_to_assign = Role.employee_garage  # Les admin_garage ne peuvent créer que des employee_garage
     else:
         # Valeur par défaut si non précisé
@@ -287,9 +287,9 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
         db.add(new_user)
         db.commit()
         db.refresh(new_user)  # Rafraîchir pour obtenir les valeurs générées (par exemple, id)
-        if current_user.role == Role.manager:
+        if current_user['role'] == Role.manager:
             wash_record = WashRecord(
-                user_id=current_user.id,
+                user_id=current_user['id'],
                 wash_date=date.today(),
                 wash_id=new_user.id
             )
@@ -297,7 +297,7 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
 
             # Mettre à jour ou créer un quota
             quota = db.query(ManagerQuota).filter(
-                ManagerQuota.user_id == current_user.id,
+                ManagerQuota.user_id == current_user['id'],
                 ManagerQuota.period_start <= date.today(),
                 ManagerQuota.period_end >= date.today()
             ).first()
@@ -307,7 +307,7 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
                 quota.quota += 1
             else:
                 new_quota = ManagerQuota(
-                    user_id=current_user.id,
+                    user_id=current_user['id'],
                     period_start=date(date.today().year, date.today().month, 1),
                     period_end=date(date.today().year, date.today().month + 1, 1) - date.resolution,
                     quota=1

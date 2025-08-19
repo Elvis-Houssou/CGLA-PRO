@@ -1,6 +1,7 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.security import OAuth2PasswordBearer
-from typing import Annotated
+from typing import Annotated, Dict, Any
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
@@ -14,6 +15,7 @@ from app.models.offer_benefit import OfferBenefit
 from pydantic import BaseModel
 
 import os
+from fastapi import APIRouter, Request
 
 load_dotenv(encoding="utf-8")
 
@@ -23,6 +25,8 @@ ALGORITHM = os.getenv("ALGORITHM")
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl="auth/login")
+bearer_scheme = HTTPBearer()
+router = APIRouter()
 
 def get_db():
     """Crée et gère une session de base de données."""
@@ -54,7 +58,7 @@ def authenticate_user(db: Session, identifier: str, password: str):
 
 def create_access_token(user: BaseModel, expires_delta: timedelta = None):
     """Crée un token JWT."""
-    encode = {'email': user.email, 'firstname': user.firstname, 'lastname': user.lastname, 'phone': user.phone, 'username': user.username, 'id': user.id, 'role': user.role}
+    encode = {'email': user.email, 'firstname': user.firstname, 'lastname': user.lastname, 'phone': user.phone, 'username': user.username, 'id': user.id, 'role': user.role, 'is_active': user.is_active}
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
@@ -63,44 +67,61 @@ def create_access_token(user: BaseModel, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def get_access_token(token: str):
+def get_access_token(token: str) -> Dict[str, Any]:
     """decoder un token JWT."""
     decoded_jwt = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
     return decoded_jwt
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_bearer)], db: DbDependency) -> User:
+# def get_current_user(token: Annotated[str, Depends(oauth2_bearer)], db: DbDependency) -> User:
+#     """Récupère l'utilisateur actuel à partir du token JWT."""
+#     credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
+#     try:
+#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         identifier: str = payload.get('email')
+#         username: str = payload.get('username')
+#         user_id: int = payload.get('id')
+#         role: str = payload.get('role')
+#         if None in (identifier, user_id, role):
+#             raise credentials_exception
+#     except JWTError:
+#         raise credentials_exception
+    
+#     user = db.query(User).where((User.username == username) | (User.email == identifier)).first()
+#     if user is None:
+#         raise credentials_exception
+#     return user
+
+# def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Dict[str, Any]:
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)) -> Dict[str, Any]:
     """Récupère l'utilisateur actuel à partir du token JWT."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="Token incorrect ou expiré",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        identifier: str = payload.get('email')
-        username: str = payload.get('username')
-        user_id: int = payload.get('id')
-        role: str = payload.get('role')
-        if None in (identifier, user_id, role):
+        token = credentials.credentials
+        user_data = get_access_token(token)
+        if not user_data:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
     
-    user = db.query(User).where((User.username == username) | (User.email == identifier)).first()
-    if user is None:
-        raise credentials_exception
-    return user
+    return user_data
 
-
-def check_superadmin(db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
+def check_superadmin(current_user: Dict[str, Any] = Depends(get_current_user)):
     # Vérifie que l'utilisateur est actif
-    if not current_user.is_active:
+    if not current_user['is_active']:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Inactive user"
         )
-    if current_user.role != Role.super_admin:
+    if current_user['role'] != Role.super_admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Super admin privileges required"
