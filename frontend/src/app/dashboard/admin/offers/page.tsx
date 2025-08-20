@@ -164,12 +164,7 @@ export default function OffersPage() {
                   <p className="text-gray-600 mb-6">
                     Commencez par créer votre première offre commerciale pour vos clients.
                   </p>
-                  <CreateOffer>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      {/* <Plus className="h-4 w-4 mr-2" /> */}
-                      Créer une offre
-                    </Button>
-                  </CreateOffer>
+                  <CreateOffer/>                  
                 </div>
               </div>
             </motion.div>
@@ -249,11 +244,11 @@ export default function OffersPage() {
                               ))}
                               {offer.benefits.length > 3 && (
                                 <div className="pt-2">
-                                  <BenefitsDialog benefits={offer.benefits} offerName={offer.name}>
-                                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 w-full">
+                                  <BenefitsDialog benefits={offer.benefits} offerName={offer.name}/>
+                                    {/* <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 w-full">
                                       Voir tous les avantages <ArrowRight className="h-4 w-4 ml-2" />
-                                    </Button>
-                                  </BenefitsDialog>
+                                    </Button> */}
+                                  {/* </BenefitsDialog> */}
                                 </div>
                               )}
                             </>
