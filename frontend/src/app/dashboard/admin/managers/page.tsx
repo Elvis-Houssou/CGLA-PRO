@@ -157,7 +157,8 @@ export default function ManagersPage() {
 
   const openDetailsModal = (manager: ManagerProps) => {
     setSelectedManager(manager);
-    setDetailsModalOpen(true);
+    setActiveTab("details");
+    // setDetailsModalOpen(true);
   };
 
   const openEditModal = (manager: ManagerProps) => {
@@ -203,7 +204,7 @@ export default function ManagersPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="flex h-fit items-center justify-center bg-gray-50">
         <div className="text-center">
           <h2 className="text-xl font-medium text-gray-800">Non authentifié</h2>
           <p className="text-gray-600 mt-2">
