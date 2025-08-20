@@ -38,21 +38,21 @@ const handleSubmit = async (e: React.FormEvent) => {
     return;
   }
 
-  try {
+   try {
     // Détermine si l'input est un email ou un username
     const loginField = { username: credentials.username };
 
-    const res = await dispatch(
-      login({
-        loginFunc: Auth.login,
-        data: { ...loginField, password: credentials.password },
-      })
-    ).unwrap();
+    // Appel direct à l'API sans utiliser dispatch
+    const res = await Auth.login({ 
+      ...loginField, 
+      password: credentials.password 
+    });
 
     if (res.data?.access_token) {
       toast.success(res.data.message || "Connexion réussie");
       localStorage.setItem("token", res.data.access_token);
       localStorage.setItem("token_type", res.data.token_type);
+      // console.log(res.data);
       Authlogin(res.data.access_token, res.data.user);
       router.push("/dashboard");
     } else {

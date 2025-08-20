@@ -43,7 +43,7 @@ interface FormValues {
   role?: RoleEnum;
 }
 
-export default function CreateForm({ onUserCreated,children }: { onUserCreated?: (newUser: any) => void, children?: React.ReactNode }) {
+export default function CreateForm({ onUserCreated }: { onUserCreated?: (newUser: any) => void}) {
     const { user } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);
@@ -87,7 +87,7 @@ export default function CreateForm({ onUserCreated,children }: { onUserCreated?:
     return (
         <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-            <Button variant={"outline"} className="w-full mb-4">
+            <Button variant={"default"} className="w-full mb-4">
                 <Plus className="mr-2" />
                 Ajouter un utilisateur
             </Button>
