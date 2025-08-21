@@ -23,7 +23,7 @@ async def get_managers( db: DbDependency, current_user: Annotated[User, Depends(
     """
     Récupère la liste des managers.
     """
-    if current_user.role != Role.super_admin:
+    if current_user['role'] != Role.super_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
 
     managers = db.query(User).filter(User.role == Role.manager).all()
@@ -31,7 +31,7 @@ async def get_managers( db: DbDependency, current_user: Annotated[User, Depends(
     manager_details = []
     for manager in managers:
         quota = db.query(ManagerQuota).filter(ManagerQuota.user_id == manager.id).first()
-        wash_records = db.query(WashRecord).filter(WashRecord.user_id == manager.id).all()
+        wash_records = db.query(WashRecord).filter(WashRecord.manager_id == manager.id).all()
         manager_details.append({
             "manager": manager,
             "quota": quota,
@@ -49,7 +49,7 @@ async def get_manager_quotas(
     """
     Récupère les quotas des managers.
     """
-    if current_user.role != "super_admin":
+    if current_user['role'] != "super_admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
 
     quotas = db.query(ManagerQuota).all()
@@ -64,7 +64,7 @@ async def get_manager_quotas_details(
     """
     Récupère les quotas des managers avec les détails des managers et des lavages.
     """
-    if current_user.role != Role.super_admin:
+    if current_user['role'] != Role.super_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
 
     quotas = db.query(ManagerQuota).all()
@@ -72,7 +72,7 @@ async def get_manager_quotas_details(
     
     for quota in quotas:
         manager = db.query(User).filter(User.role == Role.manager).filter(User.id == quota.user_id).first()
-        wash_records = db.query(WashRecord).filter(WashRecord.user_id == quota.user_id).all()
+        wash_records = db.query(WashRecord).filter(WashRecord.manager_id == quota.user_id).all()
         quota_details.append({
             "manager": manager,
             "quota": quota,
@@ -81,6 +81,30 @@ async def get_manager_quotas_details(
     
     return {"quota_details": quota_details}
 
+@router.get("/details/{manager_id}", status_code=status.HTTP_200_OK)
+async def get_manager_detail_with_quota_and_record(manager_id: int, db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
+    """Récuperer un manager et ses informations"""
+
+    if current_user["role"] != Role.super_admin:
+        raise HTTPException(status_code=403, detail="Privilège reserver au superadmin ")
+    
+
+    manager = db.query(User).filter(User.id == manager_id, User.role == Role.manager).first()
+
+    if not manager:
+        raise HTTPException(status_code=403, detail="Cet id n'existe pas")
+
+    quota = db.query(ManagerQuota).filter(ManagerQuota.user_id == manager_id).first()
+
+    wash_records = db.query(WashRecord).filter(WashRecord.manager_id == manager_id).all()
+
+    return {
+        "message": "Les infos du manager ont étés recupérer avec succès",
+        "manager": manager,
+        "quota": quota,
+        "wash_records": wash_records
+    }
+
 # enregistre les lavages ajouter par des managers
 @router.post("/wash-records/", status_code=201)
 async def create_wash_record(
@@ -88,11 +112,11 @@ async def create_wash_record(
     db: DbDependency,
     current_user: User = Depends(get_current_user)
 ):
-    if current_user.role != "manager":
+    if current_user['role'] != "manager":
         raise HTTPException(status_code=403, detail="Only managers can add wash records")
     
     wash_record = WashRecord(
-        user_id=current_user.id,
+        manager_id=current_user['id'],
         wash_date=date.today(),
         wash_id=wash_id
     )
@@ -101,7 +125,7 @@ async def create_wash_record(
     db.refresh(wash_record)
     
     quota = db.query(ManagerQuota).filter(
-        ManagerQuota.user_id == current_user.id,
+        ManagerQuota.user_id == current_user['id'],
         ManagerQuota.period_start <= date.today(),
         ManagerQuota.period_end >= date.today()
     ).first()
@@ -117,10 +141,10 @@ async def get_all_users_added(db: DbDependency, current_user: User = Depends(get
     Récupère les tous les lavages ajouter par le manager.
     """
 
-    if current_user.role != Role.manager:
+    if current_user['role'] != Role.manager:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
 
-    wash_records = db.query(WashRecord).filter(WashRecord.user_id == current_user.id).all()
+    wash_records = db.query(WashRecord).filter(WashRecord.user_id == current_user['id']).all()
     
     if not wash_records:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Aucun lavage trouvé pour ce manager")
