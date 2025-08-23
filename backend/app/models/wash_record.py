@@ -7,8 +7,19 @@ from app.models.user import User
 class WashRecord(SQLModel, table=True):
     __tablename__ = "wash_record"
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
+    manager_id: int = Field(foreign_key="user.id", ondelete="CASCADE")
     wash_date: date
-    wash_id: Optional[int] = Field(default=None, unique=True)  # Unique identifier for the wash record
+    wash_id: int = Field(foreign_key="user.id", unique=True, nullable=True)  # Unique identifier for the wash record
 
-    user: "User" = Relationship(back_populates="wash_records")
+    # user: "User" = Relationship(back_populates="wash_records")
+
+    # Relations
+    manager: "User" = Relationship(
+        back_populates="manager_wash_records",
+        sa_relationship_kwargs={"foreign_keys": "[WashRecord.manager_id]"}
+    )
+
+    admin_garage: Optional["User"] = Relationship(
+        back_populates="admin_wash_records",
+        sa_relationship_kwargs={"foreign_keys": "[WashRecord.wash_id]"}
+    )

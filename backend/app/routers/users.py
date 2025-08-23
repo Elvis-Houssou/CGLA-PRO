@@ -177,10 +177,16 @@ async def get_all_users(db: DbDependency, current_user: Dict[str, Any] = Depends
     if current_user['role'] == Role.super_admin:
         users = db.query(User).filter(User.id != current_user['id']).all()
     elif current_user['role'] == Role.manager:
-        users = db.query(User).filter(
-            User.id != current_user['id'], 
-            User.role.in_([Role.admin_garage])
-        ).all()
+        wash_records = db.query(WashRecord).filter(WashRecord.manager_id == current_user["id"]).all()
+        
+        users = []
+        for wash_record in wash_records: 
+            user = db.query(User).filter(
+                User.id == wash_record.wash_id, 
+                User.role == Role.admin_garage
+            ).first()
+            if user:
+                users.append(user)
     elif current_user['role'] == Role.admin_garage:
         users = db.query(User).filter(
             User.id != current_user['id'], 
@@ -310,30 +316,11 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
         db.refresh(new_user)  # Rafraîchir pour obtenir les valeurs générées (par exemple, id)
         if current_user['role'] == Role.manager:
             wash_record = WashRecord(
-                user_id=current_user['id'],
+                manager_id=current_user['id'],
                 wash_date=date.today(),
                 wash_id=new_user.id
             )
             db.add(wash_record)
-
-            # Mettre à jour ou créer un quota
-            quota = db.query(ManagerQuota).filter(
-                ManagerQuota.user_id == current_user['id'],
-                ManagerQuota.period_start <= date.today(),
-                ManagerQuota.period_end >= date.today()
-            ).first()
-            logger.info(f"quota recuperer : {quota}")
-
-            if quota:
-                quota.quota += 1
-            else:
-                new_quota = ManagerQuota(
-                    user_id=current_user['id'],
-                    period_start=date(date.today().year, date.today().month, 1),
-                    period_end=date(date.today().year, date.today().month + 1, 1) - date.resolution,
-                    quota=1
-                )
-                db.add(new_quota)
             db.commit()
         
         logger.info(f"Utilisateur créé : {new_user.username}, ID={new_user.id}")
