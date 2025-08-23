@@ -33,6 +33,22 @@ export interface Me {
     exp: number;    
     role: string;
 }
+ export interface Payment {
+  id: string
+  user: string
+  email: string
+  amount: number
+  currency: string
+  status: string
+  method: string
+  date: string
+  description: string
+  commune: string
+  quartier: string
+  frequence: string
+  service: string
+}
+
 
 export interface UserProps {
     id: number;
