@@ -335,6 +335,8 @@ export default function UsersPage() {
 
   return (
     <div className="container mx-auto px-4 py-6">
+      <Toaster position="top-right" richColors />
+      
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="shadow-lg bg-white border-none transition-all hover:shadow-xl">
@@ -458,7 +460,7 @@ export default function UsersPage() {
                       onClick={() => handleSort("fullName")}
                     >
                       <div className="flex items-center gap-2">
-                        <span className="hidden sm:inline">Profil</span>
+                        <span>Profil</span>
                         <Icon icon={getSortIcon("fullName")} />
                       </div>
                     </TableHead>
@@ -473,226 +475,208 @@ export default function UsersPage() {
                     </TableHead>
                     <TableHead className="hidden sm:table-cell">Rôle</TableHead>
                     <TableHead className="hidden sm:table-cell">Status</TableHead>
-                    {/* <TableHead className="hidden md:table-cell">Dernière connexion</TableHead> */}
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers
-                    .slice((currentPage - 1) * pageSize, currentPage * pageSize)
-                    .map((userData, index) => (
-                      <AnimatedTableRow
-                        key={userData.id}
-                        variants={rowVariants}
-                        custom={index}
-                        className="border-t hover:bg-gray-50"
-                      >
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedUsers.has(userData.id)}
-                            onCheckedChange={() => handleSelectUser(userData.id)}
-                            aria-label={`Sélectionner ${userData.firstname} ${userData.lastname}`}
-                          />
-                        </TableCell>
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers
+                      .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                      .map((userData, index) => (
+                        <AnimatedTableRow
+                          key={userData.id}
+                          variants={rowVariants}
+                          custom={index}
+                          className="border-t hover:bg-gray-50"
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedUsers.has(userData.id)}
+                              onCheckedChange={() => handleSelectUser(userData.id)}
+                              aria-label={`Sélectionner ${userData.firstname} ${userData.lastname}`}
+                            />
+                          </TableCell>
 
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
-                              <AvatarImage
-                                src={userData.image || "/placeholder.svg"}
-                                alt="User Image"
-                              />
-                              <AvatarFallback>
-                                {userData.firstname?.charAt(0) || "?"}
-                                {userData.lastname?.charAt(0) || "?"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <div className="font-medium text-sm sm:text-base">
-                                {userData.firstname} {userData.lastname}
-                              </div>
-                              <div className="text-xs sm:text-sm text-muted-foreground">
-                                @{userData.username}
-                              </div>
-                            </div>
-                          </div>
-                        </TableCell>
-
-                        <TableCell className="text-gray-700 text-sm sm:text-base">
-                          {userData.email}
-                        </TableCell>
-
-                        <TableCell className="hidden sm:table-cell">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <div className="flex items-center">
-                                <div className={`h-3 w-3 rounded-full mr-2 ${getRoleColor(userData.role || '').replace('bg-gradient-to-r', 'bg')}`} />
-                                <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getRoleColor(userData.role || '').replace('bg-gradient-to-r', 'bg')} text-white`}>
-                                  {getRoleLabel(userData.role || '')}
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-8 w-8 sm:h-10 sm:w-10">
+                                <AvatarImage
+                                  src={userData.image || "/placeholder.svg"}
+                                  alt="User Image"
+                                />
+                                <AvatarFallback>
+                                  {userData.firstname?.charAt(0) || "?"}
+                                  {userData.lastname?.charAt(0) || "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium text-sm sm:text-base">
+                                  {userData.firstname} {userData.lastname}
+                                </div>
+                                <div className="text-xs sm:text-sm text-muted-foreground">
+                                  @{userData.username}
                                 </div>
                               </div>
-                            </PopoverTrigger>
-                            <PopoverContent align="start" className="w-48 p-2">
-                              <div className="space-y-1">
-                                <h4 className="font-medium px-2 py-1">Changer le rôle</h4>
-                                {["super_admin", "manager", "admin_garage", "employee_garage", "client_garage"].map((role) => (
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="text-gray-700 text-sm sm:text-base">
+                            {userData.email}
+                          </TableCell>
+
+                          <TableCell className="hidden sm:table-cell">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <div className="flex items-center">
+                                  <div className={`h-3 w-3 rounded-full mr-2 ${getRoleColor(userData.role || '').replace('bg-gradient-to-r', 'bg')}`} />
+                                  <div className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getRoleColor(userData.role || '').replace('bg-gradient-to-r', 'bg')} text-white`}>
+                                    {getRoleLabel(userData.role || '')}
+                                  </div>
+                                </div>
+                              </PopoverTrigger>
+                              <PopoverContent align="start" className="w-48 p-2">
+                                <div className="space-y-1">
+                                  <h4 className="font-medium px-2 py-1">Changer le rôle</h4>
+                                  {["super_admin", "manager", "admin_garage", "employee_garage", "client_garage"].map((role) => (
+                                    <Button
+                                      key={role}
+                                      variant="ghost"
+                                      size="sm"
+                                      className={`w-full justify-start ${
+                                        userData.role === role
+                                          ? "bg-gray-100"
+                                          : ""
+                                      }`}
+                                      onClick={() =>
+                                        handleChangeRole(userData.id, role)
+                                      }
+                                    >
+                                      <div className="flex items-center">
+                                        <div className={`h-2 w-2 rounded-full mr-2 ${getRoleColor(role).replace('bg-gradient-to-r', 'bg')}`} />
+                                        {getRoleLabel(role)}
+                                      </div>
+                                    </Button>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </TableCell>
+
+                          <TableCell className="hidden sm:table-cell">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <div className="flex items-center">
+                                  <div className={`h-3 w-3 rounded-full mr-2 ${userData.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
+                                  <div className={`relative inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${userData.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                    {userData.is_active ? (
+                                      <span className="flex items-center">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5" />
+                                        Actif
+                                      </span>
+                                    ) : (
+                                      <span className="flex items-center">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-red-500 mr-1.5" />
+                                        Inactif
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </PopoverTrigger>
+                              <PopoverContent align="start" className="w-32 p-2">
+                                <div className="space-y-1">
+                                  <h4 className="font-medium px-2 py-1">Statut</h4>
                                   <Button
-                                    key={role}
                                     variant="ghost"
                                     size="sm"
-                                    className={`w-full justify-start ${
-                                      userData.role === role
-                                        ? "bg-gray-100"
-                                        : ""
-                                    }`}
+                                    className="w-full justify-start text-green-600 hover:bg-green-50"
                                     onClick={() =>
-                                      handleChangeRole(userData.id, role)
+                                      handleChangeStatus(userData.id, true)
                                     }
                                   >
-                                    <div className="flex items-center">
-                                      <div className={`h-2 w-2 rounded-full mr-2 ${getRoleColor(role).replace('bg-gradient-to-r', 'bg')}`} />
-                                      {getRoleLabel(role)}
-                                    </div>
+                                    Activer
                                   </Button>
-                                ))}
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </TableCell>
-
-                        <TableCell className="hidden sm:table-cell">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <div className="flex items-center">
-                                <div className={`h-3 w-3 rounded-full mr-2 ${userData.is_active ? 'bg-green-500' : 'bg-red-500'}`} />
-                                <div className={`relative inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${userData.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                  {userData.is_active ? (
-                                    <span className="flex items-center">
-                                      <span className="h-1.5 w-1.5 rounded-full bg-green-500 mr-1.5" />
-                                      Actif
-                                    </span>
-                                  ) : (
-                                    <span className="flex items-center">
-                                      <span className="h-1.5 w-1.5 rounded-full bg-red-500 mr-1.5" />
-                                      Inactif
-                                    </span>
-                                  )}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-start text-red-600 hover:bg-red-50"
+                                    onClick={() =>
+                                      handleChangeStatus(userData.id, false)
+                                    }
+                                  >
+                                    Désactiver
+                                  </Button>
                                 </div>
-                              </div>
-                            </PopoverTrigger>
-                            <PopoverContent align="start" className="w-32 p-2">
-                              <div className="space-y-1">
-                                <h4 className="font-medium px-2 py-1">Statut</h4>
+                              </PopoverContent>
+                            </Popover>
+                          </TableCell>
+
+                          <TableCell className="text-right">
+                            <Popover>
+                              <PopoverTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="w-full justify-start text-green-600 hover:bg-green-50"
-                                  onClick={() =>
-                                    handleChangeStatus(userData.id, true)
-                                  }
+                                  className="h-8 w-8 p-0 hover:bg-gray-100"
                                 >
-                                  Activer
+                                  <MoreVertical className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="w-full justify-start text-red-600 hover:bg-red-50"
-                                  onClick={() =>
-                                    handleChangeStatus(userData.id, false)
-                                  }
-                                >
-                                  Désactiver
-                                </Button>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </TableCell>
-
-                        {/* <TableCell className="hidden md:table-cell">
-                          {userData.lastLogin ? (
-                            <div className="text-sm text-gray-600">
-                              {new Date(userData.lastLogin).toLocaleDateString(
-                                "fr-FR",
-                                {
-                                  day: "2-digit",
-                                  month: "2-digit",
-                                  year: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                }
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              Jamais
-                            </span>
-                          )}
-                        </TableCell> */}
-
-                        <TableCell className="text-right">
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 hover:bg-gray-100"
+                              </PopoverTrigger>
+                              <PopoverContent
+                                align="end"
+                                className="w-40 p-2 space-y-1"
                               >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              align="end"
-                              className="w-40 p-2 space-y-1"
-                            >
-                              <EditForm
-                                getUser={userData}
-                                onUserUpdated={handleUserUpdated}
-                              />
-                              <DeleteForm
-                                userId={userData.id}
-                                onUserDeleted={handleUserDeleted}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                        </TableCell>
-                      </AnimatedTableRow>
-                    ))}
+                                <EditForm
+                                  getUser={userData}
+                                  onUserUpdated={handleUserUpdated}
+                                />
+                                <DeleteForm
+                                  userId={userData.id}
+                                  onUserDeleted={handleUserDeleted}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </TableCell>
+                        </AnimatedTableRow>
+                      ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                        Aucun utilisateur trouvé
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
 
-              {filteredUsers.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  Aucun utilisateur trouvé
+              {/* Footer de pagination */}
+              {filteredUsers.length > 0 && (
+                <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center space-x-4">
+                    <PageSizeSelector
+                      pageSize={pageSize}
+                      onPageSizeChange={handlePageSizeChange}
+                    />
+                    {selectedUsers.size > 0 && (
+                      <span className="text-sm text-gray-500">
+                        {selectedUsers.size} utilisateur(s) sélectionné(s)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2 items-center">
+                    {selectedUsers.size > 0 && (
+                      <Button size="sm" variant="outline" className="mb-2 sm:mb-0">
+                        Actions groupées
+                      </Button>
+                    )}
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
                 </div>
               )}
-
-              {/* Footer de pagination */}
-              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center space-x-4">
-                  <PageSizeSelector
-                    pageSize={pageSize}
-                    onPageSizeChange={handlePageSizeChange}
-                  />
-                  {selectedUsers.size > 0 && (
-                    <span className="text-sm text-gray-500">
-                      {selectedUsers.size} utilisateur(s) sélectionné(s)
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex gap-2">
-                  {selectedUsers.size > 0 && (
-                    <Button size="sm" variant="outline">
-                      Actions groupées
-                    </Button>
-                  )}
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
-              </div>
             </motion.div>
           )}
         </div>
