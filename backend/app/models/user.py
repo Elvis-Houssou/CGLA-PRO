@@ -84,4 +84,13 @@ class User(UserBase, table=True):
     # Relations
     garages: List["Garage"] = Relationship(back_populates="user")
     quotas: List["ManagerQuota"] = Relationship(back_populates="user")
-    wash_records: List["WashRecord"] = Relationship(back_populates="user")
+
+    manager_wash_records: List["WashRecord"] = Relationship(
+        back_populates="manager",
+        sa_relationship_kwargs={"foreign_keys": "[WashRecord.manager_id]"}
+    )
+    admin_wash_records: List["WashRecord"] = Relationship(
+        back_populates="admin_garage",
+        sa_relationship_kwargs={"foreign_keys": "[WashRecord.wash_id]"}
+    )
+    # wash_records: List["WashRecord"] = Relationship(back_populates="user")
