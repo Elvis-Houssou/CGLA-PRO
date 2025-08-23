@@ -30,7 +30,7 @@ async def get_managers( db: DbDependency, current_user: Annotated[User, Depends(
 
     manager_details = []
     for manager in managers:
-        quota = db.query(ManagerQuota).filter(ManagerQuota.user_id == manager.id).first()
+        quota = db.query(ManagerQuota).filter(ManagerQuota.manager_id == manager.id).first()
         wash_records = db.query(WashRecord).filter(WashRecord.manager_id == manager.id).all()
         manager_details.append({
             "manager": manager,
