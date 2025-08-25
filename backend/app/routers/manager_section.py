@@ -20,9 +20,7 @@ router = APIRouter(
 
 @router.get('/all', status_code=status.HTTP_200_OK)
 async def get_managers( db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
-    """
-    Récupère la liste des managers.
-    """
+    """ Récupère la liste des managers. """
     if current_user['role'] != Role.super_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
 
@@ -30,13 +28,41 @@ async def get_managers( db: DbDependency, current_user: Annotated[User, Depends(
 
     manager_details = []
     for manager in managers:
-        quota = db.query(ManagerQuota).filter(ManagerQuota.user_id == manager.id).first()
-        wash_records = db.query(WashRecord).filter(WashRecord.manager_id == manager.id).all()
+        initial_quota = db.query(ManagerQuota).filter(ManagerQuota.manager_id == manager.id).first()
+        if not initial_quota:
+            manager_details.append({
+                "manager": manager,
+                "wash_records": [],
+                "count_wash_records": 0,
+                "initial_quota": None,
+                "quotas_restant": 0,
+                "count_wash_record": 0,
+                "remuneration_due": 0
+            })
+            continue
+       
+        wash_records = db.query(WashRecord).filter(
+            WashRecord.manager_id == manager.id,
+            WashRecord.wash_date >= initial_quota.period_start,
+            WashRecord.wash_date <= initial_quota.period_end
+        ).all()
+
+        count_wash_record = len(wash_records)
+        quotas_restant = initial_quota.quota - count_wash_record
+
+        if initial_quota.quota == 0:
+            remuneration_due = 0
+        else:
+            remuneration_due = (count_wash_record * initial_quota.remuneration) / initial_quota.quota
+       
         manager_details.append({
             "manager": manager,
-            "quota": quota,
             "wash_records": wash_records,
-            'count_wash_records': len(wash_records)
+            'count_wash_records': len(wash_records),
+            "initial_quota": initial_quota,
+            "quotas_restant": quotas_restant,
+            "count_wash_record": count_wash_record,
+            "remuneration_due": remuneration_due
         })
     return {"managers": manager_details}
 
@@ -53,15 +79,30 @@ async def get_manager_detail_with_quota_and_record(manager_id: int, db: DbDepend
     if not manager:
         raise HTTPException(status_code=403, detail="Cet id n'existe pas")
 
-    quota = db.query(ManagerQuota).filter(ManagerQuota.manager_id == manager_id).first()
+    initial_quota = db.query(ManagerQuota).filter(ManagerQuota.manager_id == manager_id).first()
 
-    wash_records = db.query(WashRecord).filter(WashRecord.manager_id == manager_id).all()
+    wash_records = db.query(WashRecord).filter(
+        WashRecord.manager_id == manager_id,
+        WashRecord.wash_date >= initial_quota.period_start,
+        WashRecord.wash_date <= initial_quota.period_end
+    ).all()
+
+    count_wash_record = len(wash_records)
+    quotas_restant = initial_quota.quota - count_wash_record
+
+    if initial_quota.quota == 0:
+        remuneration_due = 0
+    else:
+        remuneration_due = (count_wash_record * initial_quota.remuneration) / initial_quota.quota
 
     return {
         "message": "Les infos du manager ont étés recupérer avec succès",
         "manager": manager,
-        "quota": quota,
-        "wash_records": wash_records
+        "wash_records": wash_records,
+        "initial_quota": initial_quota,
+        "quotas_restant": quotas_restant,
+        "count_wash_record": count_wash_record,
+        "remuneration_due": remuneration_due
     }
 
 @router.post("/quota_assign/{manager_id}", status_code=status.HTTP_200_OK)
@@ -79,6 +120,27 @@ async def create_manager_quotas(manager_id: int, quota_data: CreateQuota, db: Db
     if user.role != Role.manager:
         raise HTTPException(status_code=403, detail="Cet utilisateur n'est pas un manageur")
     
+    existing_quota = db.query(ManagerQuota).filter(ManagerQuota.manager_id == manager_id).first()
+    if existing_quota:
+        existing_quota.quota = quota_data.quota
+        existing_quota.period_start = quota_data.period_start
+        existing_quota.period_end = quota_data.period_end
+        existing_quota.remuneration = quota_data.remuneration
+        try:
+            db.commit()
+            db.refresh(existing_quota)
+            return {
+                "message": "Quota mis à jour avec succès",
+                "quota": existing_quota
+            }
+        except Exception as e:
+            logger.error(f"Erreur lors de la mise à jour du quota manager : {str(e)}")
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Erreur lors de la mise à jour du quota manager"
+            )
+            
     new_quota = ManagerQuota(
         manager_id = manager_id,
         quota = quota_data.quota,
