@@ -92,12 +92,20 @@ async def get_manager_quota(
         WashRecord.wash_date <= initial_quota.period_end
     ).all()
 
+
     count_wash_record = len(wash_records)
     quotas_restant = initial_quota.quota - count_wash_record
+
+    if initial_quota.quota == 0:
+        remuneration_due = 0
+    else:
+        remuneration_due = (count_wash_record * initial_quota.remuneration) / initial_quota.quota
 
     return {
         "initial_quota": initial_quota,
         "quotas_restant": quotas_restant,
+        "wash_record": count_wash_record,
+        "remuneration_due": remuneration_due
     }
 
 
