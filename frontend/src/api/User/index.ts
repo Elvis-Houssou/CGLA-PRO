@@ -80,9 +80,13 @@ User.getGarage = async (userId: number) => {
     return await axiosInstance.get(`${process.env.NEXT_PUBLIC_BASE_URL}/garage/${userId}/`);
 }
 
-User.getManager = async () => {
-    return await axiosInstance.get(`${process.env.NEXT_PUBLIC_BASE_URL}/manager/all`);
+User.getManagers = async () => {
+    return await axiosInstance.get(`${process.env.NEXT_PUBLIC_BASE_URL}/manager_section/all`);
 }
-
-
+User.getManager= async (userId: number) => {
+    return await axiosInstance.get(`${process.env.NEXT_PUBLIC_BASE_URL}/manager_section/details/${userId}`);
+}
+User.assignQuotaToManager = async ( user_id: number, data: any) => {
+    return await axiosInstance.post(`${process.env.NEXT_PUBLIC_BASE_URL}/manager_section/quota_assign/${user_id}`, data);
+}
 export default User;
