@@ -98,6 +98,7 @@ export interface ManagerProps {
     quota: QuotaProps;
     wash_records: WashRecordProps;
     count_wash_records: number;
+    initial_quota: QuotaProps
 }
 
 export interface GarageProps {

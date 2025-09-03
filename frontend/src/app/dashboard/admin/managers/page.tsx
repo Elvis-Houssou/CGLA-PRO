@@ -50,7 +50,7 @@ import { ManagerProps } from "@/props";
 import User from "@/api/User";
 import CreateManagerForm from "@/components/manager/create-manager-form";
 import ManagerDetailsModal from "@/components/manager/manager-details-modal";
-// import EditManagerForm from "@/components/manager/edit-manager-form";
+import EditManagerForm from "@/components/manager/edit-manager-form";
 import ManagerHistoryModal from "@/components/manager/manager-history-modal";
 import AssignQuotaModal from "@/components/manager/assing-quota-form";
 
@@ -173,7 +173,7 @@ export default function ManagersPage() {
 
   const openEditModal = (manager: ManagerProps) => {
     setSelectedManager(manager);
-    // setEditModalOpen(true);
+    setEditModalOpen(true);
   };
 
   const openHistoryModal = (manager: ManagerProps) => {
@@ -209,7 +209,7 @@ export default function ManagersPage() {
 
   const getProgressValue = (manager: ManagerProps) => {
     if (!manager.quota?.quota || manager.quota.quota === 0) return 0;
-    const progress = (manager.count_wash_records / manager.quota.quota) * 100;
+    const progress = (manager.initial_quota?.quota / manager.quota.quota) * 100;
     return Math.min(progress, 100);
   };
 
@@ -232,6 +232,7 @@ export default function ManagersPage() {
     activeManagers: managers.filter((m) => m.manager.is_active).length,
     totalUsersAdded: managers.reduce((sum, m) => sum + m.count_wash_records, 0),
     totalQuota: managers.reduce((sum, m) => sum + (m.quota?.quota || 0), 0),
+    totalInitialQuota: managers.reduce((sum, m) => sum + (m.initial_quota?.quota || 0), 0),
     totalRemuneration: managers.reduce((sum, m) => sum + (m.quota?.remuneration || 0), 0),
   };
 
@@ -348,10 +349,10 @@ export default function ManagersPage() {
             <CardHeader className="flex flex-row items-center justify-between pb-4">
               <div>
                 <CardTitle className="text-sm font-medium text-gray-500">
-                  Quota Total
+                  Quota Atteint
                 </CardTitle>
                 <CardDescription className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats.totalQuota}
+                  {stats.totalInitialQuota} / {stats.totalQuota}
                 </CardDescription>
               </div>
               <div className="p-3 rounded-lg bg-orange-100 text-orange-600">
@@ -359,7 +360,12 @@ export default function ManagersPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-gray-600">Objectif global</div>
+              <div className="text-sm text-gray-600">
+                {stats.totalQuota > 0 
+                  ? `${((stats.totalInitialQuota / stats.totalQuota) * 100).toFixed(0)}% d'objectif global`
+                  : 'Aucun objectif défini'
+                }
+              </div>
             </CardContent>
           </AnimatedCard>
 
@@ -497,7 +503,7 @@ export default function ManagersPage() {
                                 <div className="space-y-2">
                                   <div className="flex justify-between text-sm">
                                     <span className="text-gray-500">
-                                      {manager.count_wash_records} / {manager.quota?.quota || 0}
+                                      {manager.initial_quota?.quota || 0} / {manager.quota?.quota || 0}
                                     </span>
                                     <span className="font-medium">
                                       {progress.toFixed(0)}%
@@ -572,6 +578,7 @@ export default function ManagersPage() {
                                       size="sm"
                                       className="h-8 w-8 p-0"
                                       onClick={(e) => e.stopPropagation()}
+                                      aria-label="Actions"
                                     >
                                       <MoreVertical className="h-4 w-4" />
                                     </Button>
@@ -684,13 +691,13 @@ export default function ManagersPage() {
                       <div>
                         <div className="text-sm text-gray-500">Atteint</div>
                         <div className="text-2xl font-bold">
-                          {selectedManager.count_wash_records}
+                          {selectedManager.quota?.quota || 0}
                         </div>
                       </div>
                       <div>
                         <div className="text-sm text-gray-500">Objectif</div>
                         <div className="text-2xl font-bold">
-                          {selectedManager.quota?.quota || 0}
+                          {selectedManager.initial_quota?.quota || 0}
                         </div>
                       </div>
                     </div>
@@ -722,15 +729,15 @@ export default function ManagersPage() {
                         </div>
                       </div>
                       <div>
-                        <div className="text-sm text-gray-500">Cible</div>
+                        <div className="text-sm text-gray-500">Potentielle</div>
                         <div className="text-2xl font-bold">
                           {selectedManager.quota?.remuneration?.toLocaleString() || 0} XOF
                         </div>
                       </div>
                     </div>
-                    {selectedManager.quota?.remuneration && selectedManager.quota?.remuneration && (
+                    {selectedManager.quota?.remuneration && (
                       <Progress
-                        value={(selectedManager.quota.remuneration / selectedManager.quota.remuneration) * 100}
+                        value={100} // Valeur fixe car nous n'avons qu'une seule valeur
                         className="bg-blue-500 h-3"
                       />
                     )}
@@ -822,9 +829,15 @@ export default function ManagersPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Quota</span>
+                          <span className="text-sm text-gray-500">Quota Atteint</span>
                           <span className="text-sm font-medium">
                             {selectedManager.quota?.quota || 0}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Objectif Quota</span>
+                          <span className="text-sm font-medium">
+                            {selectedManager.initial_quota?.quota || 0}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -835,16 +848,6 @@ export default function ManagersPage() {
                             {selectedManager.quota?.remuneration?.toLocaleString() || 0} XOF
                           </span>
                         </div>
-                        {selectedManager.quota?.remuneration && (
-                          <div className="flex justify-between">
-                            <span className="text-sm text-gray-500">
-                              Objectif rémunération
-                            </span>
-                            <span className="text-sm font-medium">
-                              {selectedManager.quota.remuneration.toLocaleString()} XOF
-                            </span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>

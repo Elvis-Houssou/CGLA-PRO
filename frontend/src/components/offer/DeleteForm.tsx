@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Loader2 } from "lucide-react"
 import Offers from "@/api/Offer";
 import { useOffers } from "@/context/OfferContext";
+import { Toaster, toast } from "sonner";
+// import { toast } from "react-toastify";
 
 // Définition des types pour les props
 interface DeleteOfferProps {
@@ -36,6 +38,7 @@ export default function DeleteOffer({offerId}: DeleteOfferProps) {
                 // Utiliser le contexte pour gérer la suppression
                 handleOfferDeleted(offerId)
                 setOpen(false)
+                toast.success("Offre supprimée !")
             }
         } catch (err: any) {
             console.error("Erreur lors de la suppression de l'offre:", err);
