@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, status, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.security import OAuth2PasswordBearer
-from typing import Annotated, Dict, Any
+from typing import Annotated, Dict, Any, Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
@@ -12,6 +12,8 @@ from app.database import SessionLocal
 from app.models.user import User, Role
 from app.models.subscription import Subscription, Status
 from app.models.benefit import Benefit
+from app.models.car_wash import CarWash
+from app.models.car_wash_employee import CarWashEmployee
 from app.models.offer_benefit import OfferBenefit
 from pydantic import BaseModel
 
@@ -136,7 +138,7 @@ def check_manager(db: DbDependency, current_user: Annotated[User, Depends(get_cu
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Utilisateur inactif"
         )
-    if current_user.role != Role.manager:
+    if current_user.role != Role.system_manager:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Privilèges de manager requis"
@@ -145,11 +147,11 @@ def check_manager(db: DbDependency, current_user: Annotated[User, Depends(get_cu
 
 def check_advantage(db: DbDependency, current_user: Dict[str, Any] = Depends(get_current_user), required_benefit: str = None):
     """Vérifie si l'utilisateur a un abonnement actif avec l'avantage requis."""
-    # Vérifier si l'utilisateur est un admin_garage
-    if current_user['role'] != Role.admin_garage:
+    # Vérifier si l'utilisateur est un propriétaire de lavage
+    if current_user['role'] != Role.station_owner:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Seuls les admin_garage peuvent accéder à cette fonctionnalité"
+            detail="Seuls les propriétaires de station lavage peuvent accéder à cette fonctionnalité"
         )
     
     # Récupérer l'abonnement actif
@@ -208,3 +210,66 @@ def check_subscription_status(subscription: Subscription):
         return "active"
     else:
         return "inactive"
+    
+def check_garage_access(db: DbDependency, current_user: Dict[str, Any] = Depends(get_current_user), wash_id: Optional[int] = None):
+    """Vérifie l'accès au garage pour station_owner ou station_manager."""
+    if current_user['role'] not in [Role.station_owner, Role.station_manager]:
+        raise HTTPException(403, "Rôle non autorisé pour accéder à un garage")
+
+    if current_user['role'] == Role.station_owner:
+        # Vérifier si le garage appartient au propriétaire
+        car_wash = db.query(CarWash).filter(CarWash.id == wash_id, CarWash.user_id == current_user['id']).first()
+        if not car_wash:
+            raise HTTPException(403, "Vous n'êtes pas propriétaire de ce garage")
+        # Vérifier le benefit (ex. pour gestion_stock ou autres)
+        check_advantage(db, current_user, required_benefit="gestion_stock")
+    
+    elif current_user['role'] == Role.station_manager:
+        # Vérifier assignation a la station lavage
+        assignment = db.query(CarWashEmployee).filter(
+            CarWashEmployee.car_wash_id == wash_id,
+            CarWashEmployee.employee_id == current_user['id']
+        ).first()
+        if not assignment:
+            raise HTTPException(403, "Vous n'êtes pas assigné à ce garage")
+        # Vérifier que le propriétaire du garage a le benefit nécessaire
+        car_wash = db.query(CarWash).filter(CarWash.id == wash_id).first()
+        if car_wash:
+            owner = db.query(User).filter(User.id == car_wash.user_id).first()
+            if owner:
+                check_advantage(db, {
+                    'id': owner.id,
+                    'role': owner.role,
+                    'is_active': owner.is_active,
+                    'email': owner.email,
+                    'firstname': owner.firstname,
+                    'lastname': owner.lastname,
+                    'phone': owner.phone,
+                    'username': owner.username
+                }, required_benefit="gestion_stock")
+    
+    return current_user
+
+def check_stock_access(db: DbDependency, current_user: Dict[str, Any] = Depends(get_current_user), wash_id: int = None):
+    """Vérifie l'accès à la gestion de stock pour une station lavage."""
+    if current_user['role'] not in [Role.station_owner, Role.station_manager]:
+        raise HTTPException(403, "Rôle non autorisé")
+    
+    # Pour propriétaire : Check benefit
+    if current_user['role'] == Role.station_owner:
+        check_advantage(db, current_user, "stock_managment")
+        # Vérifie si c'est le propriétaire du garage
+        car_wash = db.query(CarWash).filter(CarWash.id == wash_id, CarWash.user_id == current_user['id']).first()
+        if not car_wash:
+            raise HTTPException(403, "Non propriétaire du garage")
+    
+    # Pour employé : Vérifie assignation au garage (pas de benefit perso)
+    elif current_user['role'] == Role.station_manager:
+        assignment = db.query(CarWashEmployee).filter(
+            CarWashEmployee.car_wash_id == wash_id,
+            CarWashEmployee.employee_id == current_user['id']
+        ).first()
+        if not assignment:
+            raise HTTPException(403, "Non assigné à ce garage")
+    
+    return current_user

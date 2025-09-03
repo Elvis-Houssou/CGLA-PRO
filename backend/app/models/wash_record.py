@@ -14,12 +14,12 @@ class WashRecord(SQLModel, table=True):
     # user: "User" = Relationship(back_populates="wash_records")
 
     # Relations
-    manager: "User" = Relationship(
+    system_manager: "User" = Relationship(
         back_populates="manager_wash_records",
         sa_relationship_kwargs={"foreign_keys": "[WashRecord.manager_id]"}
     )
 
-    admin_garage: Optional["User"] = Relationship(
-        back_populates="admin_wash_records",
+    owner_station: Optional["User"] = Relationship(
+        back_populates="owner_wash_records",
         sa_relationship_kwargs={"foreign_keys": "[WashRecord.wash_id]"}
     )
