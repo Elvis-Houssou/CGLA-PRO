@@ -95,7 +95,7 @@ export default function Garages() {
   }>({ key: null, direction: null });
 
   useEffect(() => {
-    if (!isLoading && (!isAuthenticated || !["super_admin", "manager"].includes(user?.role || ""))) {
+    if (!isLoading && (!isAuthenticated || !["super_admin", "system_manager"].includes(user?.role || ""))) {
       router.push("/");
     }
   }, [isAuthenticated, isLoading, user, router]);

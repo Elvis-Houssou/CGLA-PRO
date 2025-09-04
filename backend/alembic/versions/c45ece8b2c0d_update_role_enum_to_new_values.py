@@ -17,7 +17,6 @@ down_revision: Union[str, None] = '5e8769df66b0'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-
 def upgrade():
     # Supprimer d'abord la contrainte de la colonne role
     op.execute('ALTER TABLE "user" ALTER COLUMN role DROP DEFAULT')
@@ -28,11 +27,12 @@ def upgrade():
     
     # Créer le nouveau type enum
     role_enum = sa.Enum(
-        'super_admin', 
-        'manager', 
-        'admin_garage', 
-        'employee_garage', 
-        'client_garage', 
+        "super_admin",
+        "system_manager",
+        "station_owner",
+        "station_manager",
+        "car_washer",
+        "station_client",
         name='role'
     )
     role_enum.create(op.get_bind())
@@ -43,21 +43,17 @@ def upgrade():
         'role', 
         type_=role_enum,
         postgresql_using='role::role',
-        server_default='admin_garage'
+        server_default='station_owner'
     )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    # Supprimer le type actuel
-    op.execute("DROP TYPE role")
+    # Supprimer le type enum actuel
+    op.execute('ALTER TABLE "user" ALTER COLUMN role TYPE TEXT USING role::text')
+    op.execute('DROP TYPE role CASCADE')
 
-    # Restaurer l'ancien type
-    op.execute("""
-        CREATE TYPE role AS ENUM ('SUPER_ADMIN', 'ADMIN', 'EMPLOYEE', 'CLIENT')
-    """)
-
-    # Mettre à jour la colonne
+    # Mettre à jour la colonne role
     op.execute("""
         ALTER TABLE "user" 
         ALTER COLUMN role 
