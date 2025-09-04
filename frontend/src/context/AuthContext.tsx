@@ -1,10 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { setCookie, deleteCookie } from "cookies-next";
 import Auth from "@/api/Auth";
-import { useAppDispatch, useAppSelector } from "@/hooks/redux-hook";
 
 type User = {
   id: number;
@@ -23,99 +22,101 @@ type User = {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  setUser: (user: User | null) => void;
   isAuthenticated: boolean;
   Authlogin: (token: string, userData: User) => void;
   logout: () => Promise<void>;
-  checkAuth: () => boolean;
+  refreshAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const dispatch = useAppDispatch();
-  // const me = useAppSelector((state) => state.user.me);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const checkAuthentication = async () => {
-    if (typeof window !== "undefined") {
+
+  const checkAuthentication = useCallback(async () => {
+    setIsLoading(true);
+    
+    try {
+      if (typeof window === "undefined") return;
+
       const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const userData = JSON.parse(localStorage.getItem("user") || "null");
-          if (userData?.id) {
-            setUser(userData);
-            setCookie("auth_token", token, { maxAge: 60 * 60 * 24 * 7 }); // 7 jours
-          } else {
-            await logout();
-          }
-        } catch (error) {
-          console.error(
-            "Erreur lors de la récupération des données utilisateur:",
-            error
-          );
-          await logout();
-        }
+      if (!token) {
+        setUser(null);
+        return;
       }
+
+      // Optionnel: Vérifier la validité du token côté serveur
+      // const isValid = await Auth.verifyToken(token);
+      // if (!isValid) {
+      //   await logout();
+      //   return;
+      // }
+
+      const userData = JSON.parse(localStorage.getItem("user") || "null");
+      if (userData?.id) {
+        setUser(userData);
+        setCookie("auth_token", token, { 
+          maxAge: 60 * 60 * 24 * 7, // 7 jours
+          sameSite: "strict",
+          secure: process.env.NODE_ENV === "production"
+        });
+      } else {
+        await logout();
+      }
+    } catch (error) {
+      console.error("Authentication check failed:", error);
+      await logout();
+    } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    checkAuthentication();
   }, []);
 
-  const Authlogin = (token: string, userData: User) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userData));
-      setCookie("auth_token", token, { maxAge: 60 * 60 * 24 * 7 }); // 7 jours
-      setUser(userData);
-    }
-  };
+  const Authlogin = useCallback((token: string, userData: User) => {
+    if (typeof window === "undefined") return;
 
-  const logout = async () => {
-    console.log("logout");
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(userData));
+    setCookie("auth_token", token, { 
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production"
+    });
+    setUser(userData);
+  }, []);
 
+  const logout = useCallback(async () => {
     try {
       if (typeof window !== "undefined") {
         const token = localStorage.getItem("token");
         if (token) {
-          await Auth.logout(token);
+          await Auth.logout(token).catch(console.error);
         }
-      }
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
-    } finally {
-      if (typeof window !== "undefined") {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         deleteCookie("auth_token");
       }
       setUser(null);
-      // router.push('/');
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
     }
-  };
+  }, [router]);
 
-  const checkAuth = () => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      return !!token && !!user;
-    }
-    return false;
-  };
+  useEffect(() => {
+    checkAuthentication();
+  }, [checkAuthentication]);
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        setUser,
         isLoading,
         isAuthenticated: !!user,
         Authlogin,
         logout,
-        checkAuth,
+        refreshAuth: checkAuthentication,
       }}
     >
       {children}
@@ -126,9 +127,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error(
-      "useAuth doit être utilisé à l'intérieur d'un AuthProvider"
-    );
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
