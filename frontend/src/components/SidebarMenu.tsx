@@ -27,6 +27,9 @@ const CreditCard = dynamic(() => import('lucide-react').then(mod => mod.CreditCa
 const Car = dynamic(() => import('lucide-react').then(mod => mod.Car), { ssr: false });
 const User = dynamic(() => import('lucide-react').then(mod => mod.User), { ssr: false });
 const Settings = dynamic(() => import('lucide-react').then(mod => mod.Settings), { ssr: false });
+const Tag = dynamic(() => import('lucide-react').then(mod => mod.Tag), { ssr: false }); // Pour Offres
+const Sparkles = dynamic(() => import('lucide-react').then(mod => mod.Sparkles), { ssr: false }); // Pour Lavages
+const CalendarCheck = dynamic(() => import('lucide-react').then(mod => mod.CalendarCheck), { ssr: false }); // Pour Réservations
 
 export default function SidebarMenuNav() {
   const { user, logout } = useAuth();
@@ -39,8 +42,9 @@ export default function SidebarMenuNav() {
       { name: "Tableau de bord", href: "/dashboard", icon: Home },
       { name: "Utilisateurs", href: "/dashboard/admin/users", icon: Users },
       { name: "Managers", href: "/dashboard/admin/managers", icon: UserCog },
-      { name: "Offres", href: "/dashboard/admin/offers", icon: CreditCard },
-      { name: "Paramètres", href: "/dashboard/settings", icon: Settings }
+      { name: "Offres", href: "/dashboard/admin/offers", icon: Tag },
+      // { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
+      { name: "Paiements", href: "/dashboard/admin/payments", icon: CreditCard }
     );
   }
 
@@ -48,23 +52,25 @@ export default function SidebarMenuNav() {
     menuItems.push(
       { name: "Tableau de bord", href: "/dashboard", icon: Home },
       { name: "Utilisateurs", href: "/dashboard/manager/users", icon: Users },
-      { name: "Paramètres", href: "/dashboard/settings", icon: Settings }
+      
+      // { name: "Paramètres", href: "/dashboard/settings", icon: Settings }
     );
   }
 
   if (user?.role === "admin_garage") {
     menuItems.push(
       { name: "Tableau de bord", href: "/dashboard", icon: Home },
-      { name: "Lavages", href: "/dashboard/admin/garages", icon: Car },
-      { name: "Réservations", href: "/dashboard/reservations", icon: Calendar },
-      { name: "Paramètres", href: "/dashboard/settings", icon: Settings }
+      { name: "Lavages", href: "/dashboard/admin/garages", icon: Sparkles },
+      { name: "Réservations", href: "/dashboard/reservations", icon: CalendarCheck },
+      { name: "Lavages", href: "/dashboard/manager/lavages", icon: Sparkles },
+      // { name: "Paramètres", href: "/dashboard/settings", icon: Settings }
     );
   }
 
   if (user && ["employee_garage", "client_garage"].includes(user.role)) {
     menuItems.push(
       { name: "Tableau de bord", href: "/dashboard", icon: Home },
-      { name: "Réservations", href: "/dashboard/user/reservations", icon: Calendar },
+      { name: "Réservations", href: "/dashboard/user/reservations", icon: CalendarCheck },
       { name: "Mon profil", href: "/dashboard/user/profile", icon: User }
     );
   }
@@ -72,9 +78,9 @@ export default function SidebarMenuNav() {
   return (
     <div className="h-full">
       <Sidebar variant="floating" className="h-full border-r-0">
-        <SidebarContent className="bg-white h-full flex flex-col rounded-r-xl border border-gray-200 shadow-sm">
+        <SidebarContent className="bg-white h-full flex flex-col rounded-md border border-gray-200 shadow-sm">
           {/* En-tête avec logo */}
-          <div className="p-4 border-b border-gray-200 rounded-t-xl bg-white flex flex-col items-center">
+          <div className="p-4 border-b border-gray-200 rounded-r-xl bg-white flex flex-col items-center">
             <div className="mb-12">
               <Image 
                 src="/images/logo.png" 
@@ -90,8 +96,7 @@ export default function SidebarMenuNav() {
                 {user?.role === "super_admin" && "Espace Administration"}
                 {user?.role === "manager" && "Espace Manager"}
                 {user?.role === "admin_garage" && "Mon Garage"}
-                {/* type error got to be study  */}
-                {["employee_garage", "client_garage"].includes(user?.role) && "Mon Espace"}
+                {user && ["employee_garage", "client_garage"].includes(user.role) && "Mon Espace"}
               </h2>
               <p className="text-xs text-gray-500 mt-1 truncate">
                 {user?.email}
