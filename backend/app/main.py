@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Union
 from sqlalchemy import inspect
 
-from app.routers import auth, users, offers, benefits, offer_benefits, subscriptions, manager_section, manager_page, car_washes, stock_managments, stock_histories
+from app.routers import auth, users, offers, benefits, offer_benefits, subscriptions, manager_section, manager_page, car_washes, employees, stock_managments, stock_histories
 
 app = FastAPI(title="Système de gestion de lavage auto")
 
@@ -24,6 +24,7 @@ app.include_router(offers.router)
 app.include_router(benefits.router)
 app.include_router(offer_benefits.router)
 app.include_router(subscriptions.router)
+app.include_router(employees.router)
 app.include_router(car_washes.router)
 app.include_router(stock_managments.router)
 app.include_router(stock_histories.router)

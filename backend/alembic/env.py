@@ -12,6 +12,7 @@ load_dotenv(encoding="utf-8")
 # from app.models import user, car_wash, car_wash_employee, stock_managment, offer, benefit, offer_benefit, subscription, manager_quota, wash_record
 from app.models.user import User
 from app.models.car_wash import CarWash
+from app.models.employee import Employee
 from app.models.car_wash_employee import CarWashEmployee
 from app.models.stock_managment import StockManagment
 from app.models.offer import Offer

@@ -8,32 +8,32 @@ from importlib import import_module
 
 # Import conditionnel pour éviter les imports circulaires
 if TYPE_CHECKING:
+    from .user import User
     from .car_wash import CarWash
     from .car_wash_employee import CarWashEmployee
     from .manager_quota import ManagerQuota
     from .wash_record import WashRecord
-    from .employee import Employee
 
 
-class RoleUser(str, Enum):
-    super_admin = "super_admin" 
-    system_manager = "system_manager" 
-    station_owner = "station_owner"
+class RoleEmployee(str, Enum):
+    station_manager = "station_manager"
+    car_washer = "car_washer"
+    station_client = "station_client"
 
 
-class UserBase(SQLModel):
+class EmployeeBase(SQLModel):
     username: str = Field(unique=True, index=True)
     firstname: Optional[str] = Field(default=None)
     lastname: Optional[str] = Field(default=None)
     email: EmailStr = Field(unique=True, index=True)
     phone: Optional[str] = Field(default=None)
     age: Optional[int] = Field(default=None)
-    role: RoleUser = Field(default=RoleUser.station_owner)
+    role: RoleEmployee = Field(default=RoleEmployee.car_washer)
     is_verified: bool = Field(default=False)
     is_active: bool = Field(default=True)
 
 
-class UserCreate(BaseModel):
+class EmployeeCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
@@ -41,25 +41,25 @@ class UserCreate(BaseModel):
     lastname: Optional[str] = None
     phone: Optional[str] = None
     age: Optional[int] = None
-    role: Optional[RoleUser] = None  # Champ optionnel pour spécifier le rôle
+    role: Optional[RoleEmployee] = None  # Champ optionnel pour spécifier le rôle
 
     @field_validator("password")
     def password_strength(cls, v):
         if len(v) < 8:
             raise ValueError("Le mot de passe doit contenir au moins 8 caractères")
         return v
-class UserMe(BaseModel):
+class EmployeeMe(BaseModel):
     id: str
     first_name: str
     last_name: str
     phone: Optional[str]
-    role: RoleUser
+    role: RoleEmployee
     created_at: datetime
     updated_at: datetime
     
     
 
-class UserUpdate(BaseModel):
+class EmployeeUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[EmailStr] = None
     password: Optional[str] = None
@@ -67,7 +67,7 @@ class UserUpdate(BaseModel):
     lastname: Optional[str] = None
     phone: Optional[str] = None
     age: Optional[int] = None
-    role: Optional[RoleUser] = None
+    role: Optional[RoleEmployee] = None
     
     @field_validator("password")
     def password_strength(cls, v):
@@ -76,25 +76,21 @@ class UserUpdate(BaseModel):
         return v
 
 
-class User(UserBase, table=True):
+class Employee(EmployeeBase, table=True):
+    __tablename__ = "employees"
     id: Optional[int] = Field(default=None, primary_key=True)
+    owner_id: Optional[int] = Field(foreign_key="user.id", nullable=True)  # owner_id est l'id de l'utilisateur de rôle station_owner auquel l'employee est rattaché
     hashed_password: str = Field(exclude=True)
     can_add: bool = Field(default=False)
     can_edit: bool = Field(default=False)
-
-    quotas: List["ManagerQuota"] = Relationship(back_populates="user")
-
-    owner: "Employee" = Relationship(
-        back_populates="owned_station",
-        sa_relationship_kwargs={"foreign_keys": "[Employee.owner_id]"}
-    )
     
-    manager_wash_records: List["WashRecord"] = Relationship(
-        back_populates="system_manager",
-        sa_relationship_kwargs={"foreign_keys": "[WashRecord.manager_id]"}
+    # Relations
+    owned_station: List["User"] = Relationship(
+        back_populates="owner",
+        sa_relationship_kwargs={"foreign_keys": "[user.id]"}
     )
 
-    owner_wash_records: List["WashRecord"] = Relationship(
-        back_populates="owner_station",
-        sa_relationship_kwargs={"foreign_keys": "[WashRecord.wash_id]"}
+    assigned_station: List["CarWash"] = Relationship(
+        back_populates="employees",
+        link_model=import_module("app.models.car_wash_employee").CarWashEmployee  # Utiliser la classe directement
     )
