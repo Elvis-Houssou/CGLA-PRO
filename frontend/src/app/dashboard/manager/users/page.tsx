@@ -101,7 +101,7 @@ export default function MyUsersPage() {
 
   // Vérification des permissions
   const hasPermission = useMemo(() => {
-    return ["super_admin", "manager"].includes(currentUser?.role || "");
+    return ["super_admin", "system_manager"].includes(currentUser?.role || "");
   }, [currentUser]);
 
   // Redirection si non autorisé
@@ -116,9 +116,9 @@ export default function MyUsersPage() {
     switch (role) {
       case "super_admin":
         return "bg-red-500";
-      case "manager":
+      case "system_manager":
         return "bg-orange-500";
-      case "admin_garage":
+      case "station_owner":
         return "bg-blue-500";
       case "employee_garage":
         return "bg-green-500";
@@ -134,9 +134,9 @@ export default function MyUsersPage() {
     switch (role) {
       case "super_admin":
         return "Super Admin";
-      case "manager":
+      case "system_manager":
         return "Manager";
-      case "admin_garage":
+      case "station_owner":
         return "Admin Garage";
       case "employee_garage":
         return "Employé";
@@ -401,7 +401,7 @@ export default function MyUsersPage() {
       active: users?.filter((u) => u.is_active)?.length,
       inactive: users?.filter((u) => !u.is_active)?.length,
       admins: users?.filter((u) =>
-        ["super_admin", "manager", "admin_garage"].includes(u.role || "")
+        ["super_admin", "system_manager", "station_owner"].includes(u.role || "")
       )?.length,
     };
   }, [users]);
@@ -546,8 +546,8 @@ export default function MyUsersPage() {
               <SelectContent>
                 <SelectItem value="all">Tous les rôles</SelectItem>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="admin_garage">Admin Garage</SelectItem>
+                <SelectItem value="system_manager">Manager</SelectItem>
+                <SelectItem value="station_owner">Admin Garage</SelectItem>
                 <SelectItem value="employee_garage">Employé</SelectItem>
                 <SelectItem value="client_garage">Client</SelectItem>
               </SelectContent>

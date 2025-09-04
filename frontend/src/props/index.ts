@@ -129,8 +129,8 @@ export interface BenefitProps {
 
 export enum RoleEnum {
     super_admin = "Super Admin",
-    manager = "Manager" ,
-    admin_garage = "Propriétaire de garage",
-    employee_garage = "Employé de garage",
-    client_garage = "Client de garage",
+    system_manager = "Manager" ,
+    admin_garage = "Propriétaire de lavage",
+    employee_garage = "Employé de lavage",
+    client_garage = "Client de lavage",
 }
