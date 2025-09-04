@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.models.user import Role, User, UserCreate, UserUpdate
 from app.models.manager_quota import ManagerQuota
 from app.models.wash_record import WashRecord
-from app.models.garage import Garage
+from app.models.car_wash import CarWash
 from app.models.subscription import Subscription
 from datetime import date
 from app.dependencies import DbDependency, bcrypt_context, check_manager, check_superadmin, get_current_user
@@ -176,21 +176,21 @@ async def get_all_users(db: DbDependency, current_user: Dict[str, Any] = Depends
     logger.info("Récupération de tous les utilisateurs")
     if current_user['role'] == Role.super_admin:
         users = db.query(User).filter(User.id != current_user['id']).all()
-    elif current_user['role'] == Role.manager:
+    elif current_user['role'] == Role.system_manager:
         wash_records = db.query(WashRecord).filter(WashRecord.manager_id == current_user["id"]).all()
         
         users = []
         for wash_record in wash_records: 
             user = db.query(User).filter(
                 User.id == wash_record.wash_id, 
-                User.role == Role.admin_garage
+                User.role == Role.station_owner
             ).first()
             if user:
                 users.append(user)
-    elif current_user['role'] == Role.admin_garage:
+    elif current_user['role'] == Role.station_owner:
         users = db.query(User).filter(
             User.id != current_user['id'], 
-            User.role.in_([Role.employee_garage, Role.client_garage])
+            User.role.in_([Role.car_washer, Role.station_client])
         ).all()
     else:
         raise HTTPException(
@@ -248,13 +248,13 @@ async def show_user_detail(user_id: int, db: DbDependency, current_user: Annotat
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="L'identifiant n'existe pas dans la base de données"
         )
-    garage = db.query(Garage).filter(Garage.user_id == user.id).all()
+    car_wash = db.query(CarWash).filter(CarWash.user_id == user.id).all()
     subscription = db.query(Subscription).filter(Subscription.id == user.id).first()
 
     return {
         "message": "Informations de l'utilisateur récupérées avec succès",
         "user": user,
-        "garage": garage,
+        "car_wash": car_wash,
         "subscription": subscription
     }
    
@@ -264,7 +264,7 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
     logger.info(f"Tentative de création d'utilisateur : {user_data.username}, {user_data.email}")
 
     # Vérifie si l'utilisateur actuel a les droits nécessaires
-    if current_user['role'] not in [Role.super_admin, Role.manager, Role.admin_garage]:
+    if current_user['role'] not in [Role.super_admin, Role.system_manager, Role.station_owner]:
         logger.warning(f"Utilisateur {current_user['username']} n'a pas les droits pour créer un utilisateur.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -286,13 +286,13 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
     if user_data.role:
         if current_user['role'] == Role.super_admin:
             role_to_assign = user_data.role
-        elif current_user['role'] == Role.manager:
-            role_to_assign = Role.admin_garage  # Les managers ne peuvent créer que des admin_garage
-        elif current_user['role'] == Role.admin_garage:
-            role_to_assign = Role.employee_garage  # Les admin_garage ne peuvent créer que des employee_garage
+        elif current_user['role'] == Role.system_manager:
+            role_to_assign = Role.station_owner  # Les managers ne peuvent créer que des propriétaires de lavage
+        elif current_user['role'] == Role.station_owner:
+            role_to_assign = Role.car_washer  # Les admin_garage ne peuvent créer que des employee de lavage
     else:
         # Valeur par défaut si non précisé
-        role_to_assign = Role.admin_garage  # remplace par "user" ou ce que tu veux comme rôle de base
+        role_to_assign = Role.station_owner  # remplace par "user" ou ce que tu veux comme rôle de base
     
     new_user = User(
         username = user_data.username,
@@ -314,7 +314,7 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
         db.add(new_user)
         db.commit()
         db.refresh(new_user)  # Rafraîchir pour obtenir les valeurs générées (par exemple, id)
-        if current_user['role'] == Role.manager:
+        if current_user['role'] == Role.system_manager:
             wash_record = WashRecord(
                 manager_id=current_user['id'],
                 wash_date=date.today(),
@@ -429,7 +429,7 @@ async def create_user_admin(
 async def delete_user(user_id: int, db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
     """Supprime un utilisateur."""
     logger.info(f"Tentative de suppression de l'utilisateur ID={user_id}")
-    if current_user.role == Role.employee_garage or current_user.role == Role.client_garage:
+    if current_user.role == Role.car_washer or current_user.role == Role.station_client:
         # Si l'utilisateur est un employee_garage ou client_garage, il n'a pas les droits pour supprimer un utilisateur
         logger.warning(f"Utilisateur {current_user.username} n'a pas les droits pour supprimer un utilisateur.")
         raise HTTPException(
@@ -442,6 +442,10 @@ async def delete_user(user_id: int, db: DbDependency, current_user: Annotated[Us
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Utilisateur non trouvé"
         )
+    
+    car_wash = db.query(CarWash).filter(CarWash.user_id == user.id).all()
+    if car_wash:
+        db.delete(car_wash)
     
     try:
         db.delete(user)

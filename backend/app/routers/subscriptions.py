@@ -16,7 +16,7 @@ router = APIRouter(
 @router.get('/status', status_code=status.HTTP_200_OK)
 async def get_subscription_status(db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
     """Récupère l'état de l'abonnement de l'utilisateur actuel."""
-    subscription = db.query(Subscription).filter(Subscription.user_id == current_user.id, Subscription.status == Status.ACTIVE).first()
+    subscription = db.query(Subscription).filter(Subscription.user_id == current_user['id'], Subscription.status == Status.ACTIVE).first()
 
     if not subscription:
         return {
@@ -31,7 +31,7 @@ async def get_subscription_status(db: DbDependency, current_user: Annotated[User
 @router.post('/renew', status_code=status.HTTP_200_OK)
 async def renew_subscription(db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
     """Renouvelle l'abonnement existant de l'utilisateur."""
-    subscription = db.query(Subscription).filter(Subscription.user_id == current_user.id, Subscription.status == Status.ACTIVE).first()
+    subscription = db.query(Subscription).filter(Subscription.user_id == current_user['id'], Subscription.status == Status.ACTIVE).first()
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -65,16 +65,16 @@ async def renew_subscription(db: DbDependency, current_user: Annotated[User, Dep
 @router.post('/subscribe', status_code=status.HTTP_201_CREATED)
 async def create_subscription(db: DbDependency, subscription_data: SubscriptionCreate, current_user: Annotated[User, Depends(get_current_user)]):
     """Créer un abonnement en liant un utilisateur a une offre."""
-     # Vérifier que l'utilisateur est un admin_garage
-    if current_user.role != Role.admin_garage:
+     # Vérifier que l'utilisateur est un propriétaire de lavage
+    if current_user['role'] != Role.station_owner:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Seuls les admin_garage peuvent s'abonner à une offre"
+            detail="Seuls les propriétaire de lavage peuvent s'abonner à une offre"
         )
     
     # Vérifier si l'utilisateur a déjà un abonnement actif
     existing_subscription = db.query(Subscription).filter(
-        Subscription.user_id == current_user.id,
+        Subscription.user_id == current_user['id'],
         Subscription.status == Status.ACTIVE
     ).first()
     if existing_subscription:
@@ -93,7 +93,7 @@ async def create_subscription(db: DbDependency, subscription_data: SubscriptionC
     
     # Créer le nouvel abonnement
     new_subscription = Subscription(
-        user_id = current_user.id,
+        user_id = current_user['id'],
         offer_id = subscription_data.offer_id,
         status=Status.ACTIVE,  # ou ACTIVE, selon la logique
         start_date=datetime.now(),

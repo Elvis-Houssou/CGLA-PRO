@@ -52,6 +52,7 @@ export default function SidebarMenuNav() {
     menuItems.push(
       { name: "Tableau de bord", href: "/dashboard", icon: Home },
       { name: "Utilisateurs", href: "/dashboard/manager/users", icon: Users },
+      
       // { name: "Paramètres", href: "/dashboard/settings", icon: Settings }
     );
   }
@@ -61,6 +62,7 @@ export default function SidebarMenuNav() {
       { name: "Tableau de bord", href: "/dashboard", icon: Home },
       { name: "Lavages", href: "/dashboard/admin/garages", icon: Sparkles },
       { name: "Réservations", href: "/dashboard/reservations", icon: CalendarCheck },
+      { name: "Lavages", href: "/dashboard/manager/lavages", icon: Sparkles },
       // { name: "Paramètres", href: "/dashboard/settings", icon: Settings }
     );
   }
@@ -76,9 +78,9 @@ export default function SidebarMenuNav() {
   return (
     <div className="h-full">
       <Sidebar variant="floating" className="h-full border-r-0">
-        <SidebarContent className="bg-white h-full flex flex-col rounded-r-xl border border-gray-200 shadow-sm">
+        <SidebarContent className="bg-white h-full flex flex-col rounded-md border border-gray-200 shadow-sm">
           {/* En-tête avec logo */}
-          <div className="p-4 border-b border-gray-200 rounded-t-xl bg-white flex flex-col items-center">
+          <div className="p-4 border-b border-gray-200 rounded-r-xl bg-white flex flex-col items-center">
             <div className="mb-12">
               <Image 
                 src="/images/logo.png" 

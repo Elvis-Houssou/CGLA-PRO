@@ -73,4 +73,5 @@ Offers.getAllBenefits = async () => {
     return await axiosInstance.get(`${process.env.NEXT_PUBLIC_BASE_URL}/benefits/all`);
 }
 
+// Offers.dele
 export default Offers;

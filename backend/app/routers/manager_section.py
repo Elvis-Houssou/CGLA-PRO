@@ -24,7 +24,7 @@ async def get_managers( db: DbDependency, current_user: Annotated[User, Depends(
     if current_user['role'] != Role.super_admin:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
 
-    managers = db.query(User).filter(User.role == Role.manager).all()
+    managers = db.query(User).filter(User.role == Role.system_manager).all()
 
     manager_details = []
     for manager in managers:
@@ -74,7 +74,7 @@ async def get_manager_detail_with_quota_and_record(manager_id: int, db: DbDepend
         raise HTTPException(status_code=403, detail="Privilège reserver au superadmin ")
     
 
-    manager = db.query(User).filter(User.id == manager_id, User.role == Role.manager).first()
+    manager = db.query(User).filter(User.id == manager_id, User.role == Role.system_manager).first()
 
     if not manager:
         raise HTTPException(status_code=403, detail="Cet id n'existe pas")
@@ -117,7 +117,7 @@ async def create_manager_quotas(manager_id: int, quota_data: CreateQuota, db: Db
     if not user:
         raise HTTPException(status_code=403, detail="Cet manageur n'existe pas")
     
-    if user.role != Role.manager:
+    if user.role != Role.system_manager:
         raise HTTPException(status_code=403, detail="Cet utilisateur n'est pas un manageur")
     
     existing_quota = db.query(ManagerQuota).filter(ManagerQuota.manager_id == manager_id).first()

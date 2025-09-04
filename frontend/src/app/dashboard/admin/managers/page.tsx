@@ -30,7 +30,6 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-// import { Easing } from 'framer-motion';
 import {
   Users,
   DollarSign,
@@ -44,6 +43,7 @@ import {
   UserCheck,
   BarChart3,
   UserCog,
+  Target,
 } from "lucide-react";
 
 import { ManagerProps } from "@/props";
@@ -52,9 +52,11 @@ import CreateManagerForm from "@/components/manager/create-manager-form";
 import ManagerDetailsModal from "@/components/manager/manager-details-modal";
 import EditManagerForm from "@/components/manager/edit-manager-form";
 import ManagerHistoryModal from "@/components/manager/manager-history-modal";
+import AssignQuotaModal from "@/components/manager/assing-quota-form";
 
 // Animation variants
-import { easeOut } from 'framer-motion';
+import { easeOut } from "framer-motion";
+import { toast } from "sonner";
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -63,7 +65,7 @@ const cardVariants = {
     y: 0,
     transition: {
       duration: 0.5,
-      ease: easeOut, // Use the Easing.easeOut constant
+      ease: easeOut,
     },
   },
 };
@@ -82,7 +84,7 @@ const springTransition = {
   type: "spring" as const,
   stiffness: 100,
   damping: 15,
-}
+};
 
 const rowVariants = {
   hidden: {
@@ -113,6 +115,7 @@ export default function ManagersPage() {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [assignQuotaModalOpen, setAssignQuotaModalOpen] = useState(false);
 
   useEffect(() => {
     if (
@@ -126,12 +129,13 @@ export default function ManagersPage() {
   const loadManagers = async () => {
     setLoading(true);
     try {
-      const response = await User.getManager();
+      const response = await User.getManagers();
       if (response.status === 200) {
         setManagers(response.data.managers || []);
       }
     } catch (error) {
       console.error("Erreur lors du chargement des managers:", error);
+      toast.error("Erreur lors du chargement des managers");
     } finally {
       setLoading(false);
     }
@@ -145,6 +149,7 @@ export default function ManagersPage() {
 
   const handleManagerCreated = (newManager: ManagerProps) => {
     setManagers((prev) => [newManager, ...prev]);
+    toast.success("Manager créé avec succès");
   };
 
   const handleManagerUpdated = (updatedManager: ManagerProps) => {
@@ -153,6 +158,11 @@ export default function ManagersPage() {
         m.manager.id === updatedManager.manager.id ? updatedManager : m
       )
     );
+    toast.success("Manager modifié avec succès");
+  };
+
+  const handleQuotaAssigned = () => {
+    loadManagers();
   };
 
   const openDetailsModal = (manager: ManagerProps) => {
@@ -171,6 +181,18 @@ export default function ManagersPage() {
     setHistoryModalOpen(true);
   };
 
+  const openAssignQuotaModal = (manager: ManagerProps) => {
+    setSelectedManager(manager);
+    setAssignQuotaModalOpen(true);
+  };
+
+  const handleTabChange = (tab: string) => {
+    if ((tab === "performance" || tab === "details") && !selectedManager) {
+      return;
+    }
+    setActiveTab(tab);
+  };
+
   const getStatusBadge = (isActive: boolean) => {
     return isActive ? (
       <Badge variant="outline" className="gap-1">
@@ -185,10 +207,33 @@ export default function ManagersPage() {
     );
   };
 
+  const getProgressValue = (manager: ManagerProps) => {
+    if (!manager.quota?.quota || manager.quota.quota === 0) return 0;
+    const progress = (manager.initial_quota?.quota / manager.quota.quota) * 100;
+    return Math.min(progress, 100);
+  };
+
+  const getProgressColor = (progress: number) => {
+    if (progress >= 100) return "bg-green-500";
+    if (progress >= 75) return "bg-yellow-500";
+    if (progress >= 50) return "bg-orange-500";
+    return "bg-blue-500";
+  };
+
+  const getRemainingDays = (endDate: string) => {
+    const today = new Date();
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - today.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
   const stats = {
     totalManagers: managers.length,
     activeManagers: managers.filter((m) => m.manager.is_active).length,
     totalUsersAdded: managers.reduce((sum, m) => sum + m.count_wash_records, 0),
+    totalQuota: managers.reduce((sum, m) => sum + (m.quota?.quota || 0), 0),
+    totalInitialQuota: managers.reduce((sum, m) => sum + (m.initial_quota?.quota || 0), 0),
+    totalRemuneration: managers.reduce((sum, m) => sum + (m.quota?.remuneration || 0), 0),
   };
 
   if (isLoading) {
@@ -238,7 +283,7 @@ export default function ManagersPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <AnimatedCard
             variants={cardVariants}
             initial="hidden"
@@ -291,7 +336,36 @@ export default function ManagersPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-gray-600">Ce mois</div>
+              <div className="text-sm text-gray-600">Total cumulé</div>
+            </CardContent>
+          </AnimatedCard>
+
+          <AnimatedCard
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            className="border-0 shadow-sm"
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-4">
+              <div>
+                <CardTitle className="text-sm font-medium text-gray-500">
+                  Quota Atteint
+                </CardTitle>
+                <CardDescription className="text-2xl font-bold text-gray-900 mt-1">
+                  {stats.totalInitialQuota} / {stats.totalQuota}
+                </CardDescription>
+              </div>
+              <div className="p-3 rounded-lg bg-orange-100 text-orange-600">
+                <Target className="h-5 w-5" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-gray-600">
+                {stats.totalQuota > 0 
+                  ? `${((stats.totalInitialQuota / stats.totalQuota) * 100).toFixed(0)}% d'objectif global`
+                  : 'Aucun objectif défini'
+                }
+              </div>
             </CardContent>
           </AnimatedCard>
 
@@ -307,10 +381,7 @@ export default function ManagersPage() {
                   Rémunérations Totales
                 </CardTitle>
                 <CardDescription className="text-2xl font-bold text-gray-900 mt-1">
-                  {managers
-                    .reduce((sum, m) => sum + (m.quota?.remuneration || 0), 0)
-                    .toLocaleString()}{" "}
-                  XOF
+                  {stats.totalRemuneration.toLocaleString()} XOF
                 </CardDescription>
               </div>
               <div className="p-3 rounded-lg bg-purple-100 text-purple-600">
@@ -318,13 +389,17 @@ export default function ManagersPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-gray-600">Ce mois</div>
+              <div className="text-sm text-gray-600">Total distribué</div>
             </CardContent>
           </AnimatedCard>
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={handleTabChange}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-3 bg-gray-100">
             <TabsTrigger
               value="overview"
@@ -336,6 +411,7 @@ export default function ManagersPage() {
             <TabsTrigger
               value="performance"
               className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              disabled={!selectedManager}
             >
               <Activity className="h-4 w-4 mr-2" />
               Performances
@@ -343,6 +419,7 @@ export default function ManagersPage() {
             <TabsTrigger
               value="details"
               className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
+              disabled={!selectedManager}
             >
               <UserCheck className="h-4 w-4 mr-2" />
               Détails
@@ -365,13 +442,17 @@ export default function ManagersPage() {
                 <Card className="border-0 shadow-sm">
                   <CardHeader>
                     <CardTitle>Liste des Managers</CardTitle>
+                    <CardDescription>
+                      {managers.length} managers au total
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-[300px]">Manager</TableHead>
-                          <TableHead>Quota</TableHead>
+                          <TableHead>Quota/Progression</TableHead>
+                          <TableHead>Période</TableHead>
                           <TableHead>Rémunération</TableHead>
                           <TableHead>Utilisateurs</TableHead>
                           <TableHead>Statut</TableHead>
@@ -379,133 +460,197 @@ export default function ManagersPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {managers.map((manager, index) => (
-                          <AnimatedTableRow
-                            key={manager.manager.id}
-                            variants={rowVariants}
-                            custom={index}
-                          >
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Avatar className="h-9 w-9 border border-gray-200">
-                                  <AvatarImage
-                                    src={"/placeholder.svg"}
-                                    alt="Manager"
+                        {managers.map((manager, index) => {
+                          const progress = getProgressValue(manager);
+                          const remainingDays = manager.quota?.period_end
+                            ? getRemainingDays(manager.quota.period_end)
+                            : null;
+
+                          return (
+                            <AnimatedTableRow
+                              key={manager.manager.id}
+                              variants={rowVariants}
+                              custom={index}
+                              className="cursor-pointer hover:bg-gray-50"
+                              onClick={() => openDetailsModal(manager)}
+                            >
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-9 w-9 border border-gray-200">
+                                    <AvatarImage
+                                      src={"/placeholder.svg"}
+                                      alt="Manager"
+                                    />
+                                    <AvatarFallback className="bg-gray-100 text-gray-800">
+                                      {manager.manager.firstname?.charAt(0) ||
+                                        "M"}
+                                      {manager.manager.lastname?.charAt(0) || " "}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <div className="font-medium">
+                                      {manager.manager.firstname}{" "}
+                                      {manager.manager.lastname}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                      {manager.manager.email}
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+
+                              <TableCell>
+                                <div className="space-y-2">
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">
+                                      {manager.initial_quota?.quota || 0} / {manager.quota?.quota || 0}
+                                    </span>
+                                    <span className="font-medium">
+                                      {progress.toFixed(0)}%
+                                    </span>
+                                  </div>
+                                  <Progress
+                                    value={progress}
+                                    className={`${getProgressColor(progress)} h-2`}
                                   />
-                                  <AvatarFallback className="bg-gray-100 text-gray-800">
-                                    {manager.manager.firstname?.charAt(0) ||
-                                      "M"}
-                                    {manager.manager.lastname?.charAt(0) || " "}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <div className="font-medium">
-                                    {manager.manager.firstname}{" "}
-                                    {manager.manager.lastname}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {manager.manager.email}
-                                  </div>
                                 </div>
-                              </div>
-                            </TableCell>
+                              </TableCell>
 
-                            <TableCell>
-                              <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-500">
-                                    Objectif
-                                  </span>
-                                  <span className="font-medium">
-                                    {manager.quota?.quota || 0}
-                                  </span>
-                                </div>
-                                <Progress
-                                  value={Math.min(
-                                    manager.quota?.quota || 0,
-                                    100
+                              <TableCell>
+                                {manager.quota?.period_start && manager.quota?.period_end ? (
+                                  <div className="space-y-1 text-sm">
+                                    <div className="text-gray-900">
+                                      {new Date(manager.quota.period_start).toLocaleDateString()}
+                                    </div>
+                                    <div className="text-gray-500">
+                                      au {new Date(manager.quota.period_end).toLocaleDateString()}
+                                    </div>
+                                    {remainingDays !== null && (
+                                      <div className={`text-xs ${
+                                        remainingDays < 0 
+                                          ? "text-red-600" 
+                                          : remainingDays < 7 
+                                          ? "text-orange-600" 
+                                          : "text-green-600"
+                                      }`}>
+                                        {remainingDays < 0 
+                                          ? "Expiré" 
+                                          : `${remainingDays}j restant`}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-sm text-gray-400">Non défini</span>
+                                )}
+                              </TableCell>
+
+                              <TableCell>
+                                <div className="space-y-1">
+                                  <div className="font-medium text-gray-900">
+                                    {manager.quota?.remuneration?.toLocaleString() || 0} XOF
+                                  </div>
+                                  {manager.quota?.remuneration && (
+                                    <div className="text-xs text-gray-500">
+                                      sur {manager.quota.remuneration.toLocaleString()} XOF
+                                    </div>
                                   )}
-                                  className={
-                                    (manager.quota?.quota || 0) >= 100
-                                      ? "bg-green-500"
-                                      : "bg-blue-500 h-2"
-                                  }
-                                />
-                              </div>
-                            </TableCell>
+                                </div>
+                              </TableCell>
 
-                            <TableCell>
-                              <div className="font-medium text-gray-900">
-                                {manager.quota?.remuneration?.toLocaleString() ||
-                                  0}{" "}
-                                XOF
-                              </div>
-                            </TableCell>
+                              <TableCell>
+                                <div className="font-medium">
+                                  {manager.count_wash_records}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  ajoutés
+                                </div>
+                              </TableCell>
 
-                            <TableCell>
-                              <div className="font-medium">
-                                {manager.count_wash_records}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                ajoutés
-                              </div>
-                            </TableCell>
+                              <TableCell>
+                                {getStatusBadge(manager.manager.is_active)}
+                              </TableCell>
 
-                            <TableCell>
-                              {getStatusBadge(manager.manager.is_active)}
-                            </TableCell>
-
-                            <TableCell className="text-right">
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
+                              <TableCell className="text-right">
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 w-8 p-0"
+                                      onClick={(e) => e.stopPropagation()}
+                                      aria-label="Actions"
+                                    >
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    align="end"
+                                    className="w-48 p-2"
                                   >
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </PopoverTrigger>
-                                <PopoverContent
-                                  align="end"
-                                  className="w-48 p-2"
-                                >
-                                  <div className="flex flex-col gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="justify-start px-3 py-1.5 h-auto"
-                                      onClick={() => openDetailsModal(manager)}
-                                    >
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      Détails
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="justify-start px-3 py-1.5 h-auto"
-                                      onClick={() => openEditModal(manager)}
-                                    >
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Modifier
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="justify-start px-3 py-1.5 h-auto"
-                                      onClick={() => openHistoryModal(manager)}
-                                    >
-                                      <Activity className="h-4 w-4 mr-2" />
-                                      Historique
-                                    </Button>
-                                  </div>
-                                </PopoverContent>
-                              </Popover>
-                            </TableCell>
-                          </AnimatedTableRow>
-                        ))}
+                                    <div className="flex flex-col gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="justify-start px-3 py-1.5 h-auto"
+                                        onClick={() => openDetailsModal(manager)}
+                                      >
+                                        <Eye className="h-4 w-4 mr-2" />
+                                        Détails
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="justify-start px-3 py-1.5 h-auto"
+                                        onClick={() => openEditModal(manager)}
+                                      >
+                                        <Edit className="h-4 w-4 mr-2" />
+                                        Modifier
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="justify-start px-3 py-1.5 h-auto"
+                                        onClick={() => openAssignQuotaModal(manager)}
+                                      >
+                                        <Target className="h-4 w-4 mr-2" />
+                                        Assigner Quota
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="justify-start px-3 py-1.5 h-auto"
+                                        onClick={() => openHistoryModal(manager)}
+                                      >
+                                        <Activity className="h-4 w-4 mr-2" />
+                                        Historique
+                                      </Button>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </TableCell>
+                            </AnimatedTableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
+                    
+                    {managers.length === 0 && !loading && (
+                      <div className="text-center py-12">
+                        <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          Aucun manager
+                        </h3>
+                        <p className="text-gray-500 mb-4">
+                          Commencez par ajouter votre premier manager
+                        </p>
+                        <CreateManagerForm onManagerCreated={handleManagerCreated}>
+                          <Button className="bg-blue-600 hover:bg-blue-700">
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Ajouter un manager
+                          </Button>
+                        </CreateManagerForm>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -513,87 +658,113 @@ export default function ManagersPage() {
           </TabsContent>
 
           <TabsContent value="performance" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {loading ? (
-                [...Array(4)].map((_, i) => (
-                  <Skeleton key={i} className="h-48 w-full rounded-lg" />
-                ))
-              ) : managers.length > 0 ? (
-                managers.map((manager) => (
-                  <AnimatedCard
-                    key={manager.manager.id}
-                    variants={cardVariants}
-                    initial="hidden"
-                    animate="visible"
-                    className="border-0 shadow-sm"
-                  >
-                    <CardHeader>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9 border border-gray-200">
-                          <AvatarImage src={"/placeholder.svg"} alt="Manager" />
-                          <AvatarFallback className="bg-gray-100 text-gray-800">
-                            {manager.manager.firstname?.charAt(0) || "M"}
-                            {manager.manager.lastname?.charAt(0) || " "}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <CardTitle className="text-base">
-                            {manager.manager.firstname}{" "}
-                            {manager.manager.lastname}
-                          </CardTitle>
-                          <CardDescription className="text-sm">
-                            {manager.count_wash_records} utilisateurs ajoutés
-                          </CardDescription>
+            {selectedManager ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <AnimatedCard
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="border-0 shadow-sm"
+                >
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9 border border-gray-200">
+                        <AvatarImage src={"/placeholder.svg"} alt="Manager" />
+                        <AvatarFallback className="bg-gray-100 text-gray-800">
+                          {selectedManager.manager.firstname?.charAt(0) || "M"}
+                          {selectedManager.manager.lastname?.charAt(0) || " "}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <CardTitle className="text-base">
+                          {selectedManager.manager.firstname}{" "}
+                          {selectedManager.manager.lastname}
+                        </CardTitle>
+                        <CardDescription className="text-sm">
+                          Performance du quota
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm text-gray-500">Atteint</div>
+                        <div className="text-2xl font-bold">
+                          {selectedManager.quota?.quota || 0}
                         </div>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <div className="text-sm text-gray-500">Quota</div>
-                          <div className="text-2xl font-bold">
-                            {manager.quota?.quota || 0}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-sm text-gray-500">
-                            Rémunération
-                          </div>
-                          <div className="text-2xl font-bold">
-                            {manager.quota?.remuneration?.toLocaleString() || 0}{" "}
-                            XOF
-                          </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Objectif</div>
+                        <div className="text-2xl font-bold">
+                          {selectedManager.initial_quota?.quota || 0}
                         </div>
                       </div>
+                    </div>
+                    <Progress
+                      value={getProgressValue(selectedManager)}
+                      className={`${getProgressColor(getProgressValue(selectedManager))} h-3`}
+                    />
+                    <div className="text-center text-sm text-gray-500">
+                      {getProgressValue(selectedManager).toFixed(0)}% complété
+                    </div>
+                  </CardContent>
+                </AnimatedCard>
+
+                <AnimatedCard
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  className="border-0 shadow-sm"
+                >
+                  <CardHeader>
+                    <CardTitle className="text-base">Rémunération</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-sm text-gray-500">Actuelle</div>
+                        <div className="text-2xl font-bold">
+                          {selectedManager.quota?.remuneration?.toLocaleString() || 0} XOF
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Potentielle</div>
+                        <div className="text-2xl font-bold">
+                          {selectedManager.quota?.remuneration?.toLocaleString() || 0} XOF
+                        </div>
+                      </div>
+                    </div>
+                    {selectedManager.quota?.remuneration && (
                       <Progress
-                        value={Math.min(manager.quota?.quota || 0, 100)}
-                        className={
-                          (manager.quota?.quota || 0) >= 100
-                            ? "bg-green-500"
-                            : "bg-blue-500 h-2"
-                        }
+                        value={100} // Valeur fixe car nous n'avons qu'une seule valeur
+                        className="bg-blue-500 h-3"
                       />
-                    </CardContent>
-                  </AnimatedCard>
-                ))
-              ) : (
-                <div className="col-span-2 flex flex-col items-center justify-center py-12">
-                  <UserCheck className="h-12 w-12 text-gray-400 mb-4" />
+                    )}
+                  </CardContent>
+                </AnimatedCard>
+              </div>
+            ) : (
+              <Card className="border-0 shadow-sm">
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <Activity className="h-12 w-12 text-gray-400 mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Aucun manager
+                    Sélectionnez un manager
                   </h3>
                   <p className="text-gray-500 mb-4">
-                    Commencez par ajouter votre premier manager
+                    Veuillez sélectionner un manager pour voir ses performances
                   </p>
-                  <CreateManagerForm onManagerCreated={handleManagerCreated}>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Ajouter un manager
-                    </Button>
-                  </CreateManagerForm>
-                </div>
-              )}
-            </div>
+                  <Button
+                    variant="outline"
+                    className="border-gray-300"
+                    onClick={() => setActiveTab("overview")}
+                  >
+                    <ChevronRight className="h-4 w-4 mr-2" />
+                    Voir la liste
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="details" className="mt-6">
@@ -658,9 +829,15 @@ export default function ManagersPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Quota</span>
+                          <span className="text-sm text-gray-500">Quota Atteint</span>
                           <span className="text-sm font-medium">
                             {selectedManager.quota?.quota || 0}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500">Objectif Quota</span>
+                          <span className="text-sm font-medium">
+                            {selectedManager.initial_quota?.quota || 0}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -668,14 +845,30 @@ export default function ManagersPage() {
                             Rémunération
                           </span>
                           <span className="text-sm font-medium">
-                            {selectedManager.quota?.remuneration?.toLocaleString() ||
-                              0}{" "}
-                            XOF
+                            {selectedManager.quota?.remuneration?.toLocaleString() || 0} XOF
                           </span>
                         </div>
                       </div>
                     </div>
                   </div>
+
+                  {selectedManager.quota?.period_start && selectedManager.quota?.period_end && (
+                    <div className="space-y-4">
+                      <h3 className="font-medium text-gray-900">
+                        Période du quota
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="p-3 bg-blue-50 rounded-lg">
+                          <div className="text-blue-600 font-medium">Début</div>
+                          <div>{new Date(selectedManager.quota.period_start).toLocaleDateString()}</div>
+                        </div>
+                        <div className="p-3 bg-green-50 rounded-lg">
+                          <div className="text-green-600 font-medium">Fin</div>
+                          <div>{new Date(selectedManager.quota.period_end).toLocaleDateString()}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <div className="flex items-center justify-between mb-4">
@@ -708,7 +901,11 @@ export default function ManagersPage() {
                   <p className="text-gray-500 mb-4">
                     Veuillez sélectionner un manager pour voir ses détails
                   </p>
-                  <Button variant="outline" className="border-gray-300">
+                  <Button
+                    variant="outline"
+                    className="border-gray-300"
+                    onClick={() => setActiveTab("overview")}
+                  >
                     <ChevronRight className="h-4 w-4 mr-2" />
                     Voir la liste
                   </Button>
@@ -724,16 +921,22 @@ export default function ManagersPage() {
           open={detailsModalOpen}
           onOpenChange={setDetailsModalOpen}
         />
-        <EditManagerForm
+        {/* <EditManagerForm
           manager={selectedManager}
           open={editModalOpen}
           onOpenChange={setEditModalOpen}
           onManagerUpdated={handleManagerUpdated}
-        />
+        /> */}
         <ManagerHistoryModal
           manager={selectedManager}
           open={historyModalOpen}
           onOpenChange={setHistoryModalOpen}
+        />
+        <AssignQuotaModal
+          manager={selectedManager}
+          open={assignQuotaModalOpen}
+          onOpenChange={setAssignQuotaModalOpen}
+          onQuotaAssigned={handleQuotaAssigned}
         />
       </div>
     </div>

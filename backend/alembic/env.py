@@ -9,13 +9,17 @@ load_dotenv(encoding="utf-8")
 
 # Importer les modèles SQLModel
 
-from app.models import User, Garage, Offer, Benefit, OfferBenefit, Subscription
-# from app.models.user import User
-# from app.models.garage import Garage
-# from app.models.offer import Offer
-# from app.models.subscription import Subscription
-# from app.models.benefit import Benefit
-# from app.models.offer_benefit import OfferBenefit
+# from app.models import user, car_wash, car_wash_employee, stock_managment, offer, benefit, offer_benefit, subscription, manager_quota, wash_record
+from app.models.user import User
+from app.models.car_wash import CarWash
+from app.models.car_wash_employee import CarWashEmployee
+from app.models.stock_managment import StockManagment
+from app.models.offer import Offer
+from app.models.benefit import Benefit
+from app.models.offer_benefit import OfferBenefit
+from app.models.subscription import Subscription
+from app.models.manager_quota import ManagerQuota
+from app.models.wash_record import WashRecord
 
 
 from sqlmodel import SQLModel

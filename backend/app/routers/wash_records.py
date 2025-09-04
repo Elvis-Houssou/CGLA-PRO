@@ -29,7 +29,7 @@ async def get_manager_history(
     if current_user.role != "super_admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès interdit")
 
-    managers = db.query(User).filter(User.role == Role.manager).all()
+    managers = db.query(User).filter(User.role == Role.system_manager).all()
     return {"managers": managers}
 
 # recuperer les quotats des managers
@@ -63,7 +63,7 @@ async def get_manager_quotas_details(
     quota_details = []
     
     for quota in quotas:
-        manager = db.query(User).filter(User.role == Role.manager).filter(User.id == quota.user_id).first()
+        manager = db.query(User).filter(User.role == Role.system_manager).filter(User.id == quota.user_id).first()
         wash_records = db.query(WashRecord).filter(WashRecord.user_id == quota.user_id).all()
         quota_details.append({
             "manager": manager,
