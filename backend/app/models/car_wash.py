@@ -5,7 +5,7 @@ from importlib import import_module
 
 # Import conditionnel pour éviter les imports circulaires
 if TYPE_CHECKING:
-    from .user import User
+    from .employee import Employee
     from .car_wash_employee import CarWashEmployee
     from .stock_managment import StockManagment
 
@@ -36,11 +36,8 @@ class CarWash(CarWashBase, table=True):
     __tablename__ = "car_wash"
     id: Optional[int] = Field(default=None, primary_key=True)
     # user: "User" = Relationship(back_populates="car_wash")
-    owner: "User" = Relationship(
-        back_populates="owned_station",
-        sa_relationship_kwargs={"foreign_keys": "[CarWash.user_id]"}
-    )
-    employees: List["User"] = Relationship(
+   
+    employees: List["Employee"] = Relationship(
         back_populates="assigned_station",
         link_model=import_module("app.models.car_wash_employee").CarWashEmployee
     )

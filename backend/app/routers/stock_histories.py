@@ -1,7 +1,6 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from app.models.car_wash import CarWash, CarWashCreate, CarWashUpdate
 from app.models.car_wash_employee import CarWashEmployee
-from app.models.user import Role
 from app.models.stock_history import StockHistory
 from app.models.user import User, UserCreate
 from app.dependencies import DbDependency, bcrypt_context, create_access_token, check_superadmin, check_advantage, get_advantage_checker, get_current_user

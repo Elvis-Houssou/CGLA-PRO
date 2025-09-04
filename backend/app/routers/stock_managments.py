@@ -1,6 +1,6 @@
 from typing import Annotated, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.models.user import Role, User, UserCreate, UserUpdate
+from app.models.user import User, UserCreate, UserUpdate
 from app.models.manager_quota import ManagerQuota
 from app.models.wash_record import WashRecord
 from app.models.subscription import Subscription

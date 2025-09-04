@@ -2,7 +2,7 @@ from fastapi import Depends, APIRouter, HTTPException, status
 from datetime import datetime, timedelta
 from app.models.subscription import Subscription, SubscriptionCreate, SubscriptionUpdate, Status
 from app.models.offer import Offer
-from app.models.user import User, Role
+from app.models.user import User, RoleUser
 from app.dependencies import DbDependency, check_subscription_status, check_advantage, get_advantage_checker, get_current_user
 from typing import Annotated
 
@@ -66,7 +66,7 @@ async def renew_subscription(db: DbDependency, current_user: Annotated[User, Dep
 async def create_subscription(db: DbDependency, subscription_data: SubscriptionCreate, current_user: Annotated[User, Depends(get_current_user)]):
     """Créer un abonnement en liant un utilisateur a une offre."""
      # Vérifier que l'utilisateur est un propriétaire de lavage
-    if current_user['role'] != Role.station_owner:
+    if current_user['role'] != RoleUser.station_owner:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Seuls les propriétaire de lavage peuvent s'abonner à une offre"

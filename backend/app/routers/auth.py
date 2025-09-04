@@ -1,16 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated, Dict, Any
-from jose import jwt
 from datetime import timedelta
-# from app.models.user import User
 from dotenv import load_dotenv
 from app.dependencies import DbDependency, create_access_token, get_access_token, authenticate_user, get_current_user
 
 
 
 
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 load_dotenv(encoding="utf-8")
 
 router = APIRouter(

@@ -1,13 +1,13 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from app.models.car_wash import CarWash, CarWashCreate, CarWashUpdate
 from app.models.car_wash_employee import CarWashEmployee
-from app.models.user import Role
+from app.models.user import RoleUser
+from app.models.employee import Employee, RoleEmployee, EmployeeCreate
 from app.models.offer import Offer
 from app.models.user import User, UserCreate
 from app.dependencies import DbDependency, bcrypt_context, create_access_token, check_superadmin, check_advantage, get_advantage_checker, get_current_user
 from typing import Annotated, Dict, Any, List
 from copy import deepcopy
-from sqlmodel import select
 from pydantic import BaseModel
 from datetime import timedelta
 
@@ -42,11 +42,16 @@ async def get_one_station_info(wash_id: int, db: DbDependency, current_user: Ann
             detail="Lavage non trouvé"
         )
     car_wash_employees = db.query(CarWashEmployee).filter(CarWashEmployee.car_wash_id == car_wash.id).all()
+
+    employees = []
+    for employee in car_wash_employees:
+        employee_info = db.query(Employee).filter(Employee.id == employee.employee_id).first()
+        employees.append(employee_info)
     
     return {
         "message": "Lavage récupéré avec succès",
         "lavage": car_wash,
-        "employees": car_wash_employees
+        "employees": employees
     }
 
 
@@ -79,7 +84,7 @@ async def create_station(db: DbDependency, washing_data: CarWashCreate, current_
 
 
 @router.post('/create/{wash_id}/employee', status_code=status.HTTP_201_CREATED)
-async def create_user_employee_for_station(db: DbDependency, wash_id: int, user_data: UserCreate, current_user: Annotated[User, Depends(get_current_user)]):
+async def create_user_employee_for_station(db: DbDependency, wash_id: int, user_data: EmployeeCreate, current_user: Annotated[User, Depends(get_current_user)]):
     """
         Créer un compte employer pour un lavage spécifique.
         Seuls les station_owner propriétaires du lavage peuvent effectuer cette action.
@@ -101,8 +106,8 @@ async def create_user_employee_for_station(db: DbDependency, wash_id: int, user_
         )
     
     # Vérifier si un utilisateur avec le même username ou email existe
-    existing_user = db.query(User).filter(
-        (User.username == user_data.username) | (User.email == user_data.email)
+    existing_user = db.query(Employee).filter(
+        (Employee.username == user_data.username) | (User.email == user_data.email)
     ).first()
 
     if existing_user:
@@ -125,7 +130,7 @@ async def create_user_employee_for_station(db: DbDependency, wash_id: int, user_
         lastname = user_data.lastname if user_data.lastname else None,
         phone = user_data.phone if user_data.phone else None,
         age = user_data.age if user_data.age else None,
-        role = user_data.role if user_data.role else Role.car_washer,
+        role = user_data.role if user_data.role else RoleEmployee.car_washer,
         is_verified=False,  # Nécessite une vérification par email
         is_active=True,  # Actif par défaut
         can_add=False,  # Permissions par défaut
@@ -166,7 +171,7 @@ async def create_user_employee_for_station(db: DbDependency, wash_id: int, user_
 
 @router.get('/{wash_id}/employee', status_code=status.HTTP_200_OK)
 async def get_all_employee_from_station(db: DbDependency, wash_id: int, current_user: Annotated[User, Depends(get_current_user)]):
-    """Voir tous ses employee"""
+    """Voir tous les  employee d'un lavage spécifique."""
     car_wash = db.query(CarWash).filter(CarWash.id == wash_id).first()
     if not car_wash:
         raise HTTPException(
