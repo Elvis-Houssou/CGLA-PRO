@@ -47,13 +47,17 @@ def authenticate_user(db: Session, identifier: str, password: str):
     """Authentifie un utilisateur."""
     user = db.query(User).where((User.username == identifier) | (User.email == identifier)).first()
     if not user: 
-        return False 
+        user = db.query(Employee).where((Employee.username == identifier) | (Employee.email == identifier)).first()
+        if not user:
+            return False 
     
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Utilisateur inactif"
         )
+    
+    
     if not bcrypt_context.verify(password, user.hashed_password):
         return None
     

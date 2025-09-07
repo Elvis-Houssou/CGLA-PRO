@@ -7,4 +7,4 @@ if TYPE_CHECKING:
 class CarWashEmployee(SQLModel, table=True):
     __tablename__ = "car_wash_employee"
     car_wash_id: int = Field(foreign_key="car_wash.id", primary_key=True)
-    employee_id: int = Field(foreign_key="employee.id", primary_key=True)
+    employee_id: int = Field(foreign_key="employees.id", primary_key=True)

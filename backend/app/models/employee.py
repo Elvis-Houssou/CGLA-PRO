@@ -85,12 +85,12 @@ class Employee(EmployeeBase, table=True):
     can_edit: bool = Field(default=False)
     
     # Relations
-    owned_station: List["User"] = Relationship(
-        back_populates="owner",
-        sa_relationship_kwargs={"foreign_keys": "[user.id]"}
+    owner: "User" = Relationship(
+        back_populates="employees",
+        sa_relationship_kwargs={"foreign_keys": "[Employee.owner_id]"}
     )
 
     assigned_station: List["CarWash"] = Relationship(
         back_populates="employees",
-        link_model=import_module("app.models.car_wash_employee").CarWashEmployee  # Utiliser la classe directement
+        sa_relationship_kwargs={"secondary": "car_wash_employee"}
     )
