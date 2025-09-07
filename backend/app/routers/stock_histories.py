@@ -6,7 +6,6 @@ from app.models.user import User, UserCreate
 from app.dependencies import DbDependency, bcrypt_context, create_access_token, check_superadmin, check_advantage, get_advantage_checker, get_current_user
 from typing import Annotated, Dict, Any, List
 from copy import deepcopy
-from sqlmodel import select
 from pydantic import BaseModel
 from datetime import timedelta
 

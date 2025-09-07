@@ -39,7 +39,8 @@ class CarWash(CarWashBase, table=True):
    
     employees: List["Employee"] = Relationship(
         back_populates="assigned_station",
-        link_model=import_module("app.models.car_wash_employee").CarWashEmployee
+        # link_model=import_module("app.models.car_wash_employee").xCarWashEmployee
+        sa_relationship_kwargs={"secondary": "car_wash_employee"}
     )
     stocks: List["StockManagment"] = Relationship(back_populates="station")
 

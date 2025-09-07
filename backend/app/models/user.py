@@ -84,8 +84,23 @@ class User(UserBase, table=True):
 
     quotas: List["ManagerQuota"] = Relationship(back_populates="user")
 
-    owner: "Employee" = Relationship(
-        back_populates="owned_station",
+    # owner: "Employee" = Relationship(
+    #     back_populates="owned_station",
+    #     sa_relationship_kwargs={"foreign_keys": "[Employee.owner_id]"}
+    # )
+    
+    # manager_wash_records: List["WashRecord"] = Relationship(
+    #     back_populates="system_manager",
+    #     sa_relationship_kwargs={"foreign_keys": "[WashRecord.manager_id]"}
+    # )
+
+    # owner_wash_records: List["WashRecord"] = Relationship(
+    #     back_populates="owner_station",
+    #     sa_relationship_kwargs={"foreign_keys": "[WashRecord.wash_id]"}
+    # )
+    
+    employees: List["Employee"] = Relationship(
+        back_populates="owner",
         sa_relationship_kwargs={"foreign_keys": "[Employee.owner_id]"}
     )
     
