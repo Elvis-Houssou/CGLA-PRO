@@ -43,7 +43,6 @@ def upgrade() -> None:
     op.create_index(op.f('ix_employees_email'), 'employees', ['email'], unique=True)
     op.create_index(op.f('ix_employees_username'), 'employees', 
     ['username'], unique=True)
-    
     # op.drop_table('stock_histories')
 
     # Supprimer la table car_wash_employee si elle existe
