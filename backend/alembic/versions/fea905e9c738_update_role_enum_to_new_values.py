@@ -29,11 +29,12 @@ def upgrade():
     
     # Créer le nouveau type enum
     role_enum = sa.Enum(
-        'super_admin', 
-        'manager', 
-        'admin_garage', 
-        'employee_garage', 
-        'client_garage', 
+        "super_admin",
+        "system_manager",
+        "station_owner",
+        "station_manager",
+        "car_washer",
+        "station_client",
         name='role'
     )
     role_enum.create(op.get_bind())
@@ -44,19 +45,15 @@ def upgrade():
         'role', 
         type_=role_enum,
         postgresql_using='role::role',
-        server_default='admin_garage'
+        server_default='station_owner'
     )
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    # Créer l'ancien type ENUM
-    op.execute("DROP TYPE role")
-
-    # Mapper les nouvelles valeurs aux anciennes
-    op.execute("""
-        CREATE TYPE role AS ENUM ('SUPER_ADMIN', 'ADMIN', 'EMPLOYEE', 'CLIENT')
-    """)
+    # Supprimer le type enum actuel
+    op.execute('ALTER TABLE "user" ALTER COLUMN role TYPE TEXT USING role::text')
+    op.execute('DROP TYPE role CASCADE')
 
     # Mettre à jour la colonne role
     op.execute("""

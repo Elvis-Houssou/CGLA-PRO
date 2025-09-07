@@ -6,7 +6,7 @@ interface User {
   id: number;
   username: string;
   email: string;
-  role: "super_admin" | "manager" | "admin_garage" | "employee_garage" | "client_garage";
+  role: "super_admin" | "system_manager" | "station_owner" | "employee_garage" | "client_garage";
 }
 
 interface AuthContextType {

@@ -48,7 +48,7 @@ export default function SidebarMenuNav() {
     );
   }
 
-  if (user?.role === "manager") {
+  if (user?.role === "system_manager") {
     menuItems.push(
       { name: "Tableau de bord", href: "/dashboard", icon: Home },
       { name: "Utilisateurs", href: "/dashboard/manager/users", icon: Users },
@@ -57,7 +57,7 @@ export default function SidebarMenuNav() {
     );
   }
 
-  if (user?.role === "admin_garage") {
+  if (user?.role === "station_owner") {
     menuItems.push(
       { name: "Tableau de bord", href: "/dashboard", icon: Home },
       { name: "Lavages", href: "/dashboard/admin/garages", icon: Sparkles },
@@ -94,8 +94,8 @@ export default function SidebarMenuNav() {
             <div className="w-full text-center">
               <h2 className="text-lg font-semibold text-gray-800">
                 {user?.role === "super_admin" && "Espace Administration"}
-                {user?.role === "manager" && "Espace Manager"}
-                {user?.role === "admin_garage" && "Mon Garage"}
+                {user?.role === "system_manager" && "Espace Manager"}
+                {user?.role === "station_owner" && "Mon Garage"}
                 {user && ["employee_garage", "client_garage"].includes(user.role) && "Mon Espace"}
               </h2>
               <p className="text-xs text-gray-500 mt-1 truncate">

@@ -13,8 +13,8 @@ type User = {
   email: string;
   role:
     | "super_admin"
-    | "manager"
-    | "admin_garage"
+    | "system_manager"
+    | "station_owner"
     | "employee_garage"
     | "client_garage";
 };
