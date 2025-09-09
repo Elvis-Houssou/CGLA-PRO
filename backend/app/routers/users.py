@@ -40,7 +40,7 @@ async def get_all_users(db: DbDependency, current_user: Dict[str, Any] = Depends
                 users.append(user)
     elif current_user['role'] == RoleUser.station_owner:
         users = db.query(Employee).filter(
-            Employee.user_id == current_user['id']
+            Employee.owner_id == current_user['id']
         ).all()
     else:
         raise HTTPException(
@@ -197,7 +197,7 @@ async def create_user(user_data: UserCreate, db: DbDependency, current_user: Ann
 async def edit_user(user_id: int, user_data: UserUpdate, db: DbDependency, current_user: Annotated[User, Depends(get_current_user)]):
     """Récupère les informations d'un utilisateur pour l'édition."""
     logger.info(f"Récupération des informations de l'utilisateur ID={user_id} pour édition")
-    if current_user['role'] != RoleUser.system_manager:
+    if current_user['role'] == RoleUser.station_owner or current_user['role'] == RoleUser.system_manager:
         user = db.query(Employee).filter(Employee.id == user_id).first()
     else:
         user = db.query(User).filter(User.id == user_id).first()

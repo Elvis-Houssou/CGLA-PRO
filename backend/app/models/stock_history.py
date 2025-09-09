@@ -10,6 +10,7 @@ class StockHistoryBase(SQLModel):
     stock_id: int = Field(foreign_key="stock_managments.id", nullable=False)
     name: str = Field(unique=True, nullable=False)
     operation: Optional[str] = None
+    operator_name: Optional[str] = None
     quantity: int = Field(default=0, ge=0)  # Quantité en stock
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 

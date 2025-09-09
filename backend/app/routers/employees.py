@@ -70,14 +70,14 @@ async def create_employee(employee_data: EmployeeCreate, db: DbDependency, curre
         db.commit()
         db.refresh(new_employee) 
     except Exception as e:
-        logger.error(f"Erreur lors de la création de l'utilisateur : {str(e)}")
+        logger.error(f"Erreur lors de la création de l'employé : {str(e)}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erreur lors de la création de l'utilisateur"
+            detail="Erreur lors de la création de l'employé"
         )
     return {
-        "message": "User created successfully", 
+        "message": "Employé créé avec succès", 
         "user": new_employee
     }
 
