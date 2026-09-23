@@ -9,17 +9,15 @@ import os
 # Charger les variables d'environnement depuis le fichier .env
 load_dotenv(encoding="utf-8")
 
-POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "admin")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
-POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
-POSTGRES_DB = os.getenv("POSTGRES_DB", "cgla_db")
-
+# POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
+# POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "admin")
+# POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+# POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:admin@localhost:5432/cgla_db")
+# DATABASE_PASSWORD = DATABASE_URL.split(':')[2].split('@')[0]
 # URL-encode the password to handle special characters
-encoded_password = quote_plus(POSTGRES_PASSWORD)
-DATABASE_URL = (
-    f"postgresql://{POSTGRES_USER}:{encoded_password}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-)
+# encoded_password = quote_plus(DATABASE_PASSWORD)
+# DATABASE_URL = DB_URL
 
 # Créer le moteur de connexion à la base de données
 engine = create_engine(DATABASE_URL, echo=True) # echo=True pour le débogage, à désactiver en production
